@@ -1,11 +1,22 @@
+<div align="center">
+
 # Juntos+1
 
-Una PWA de finanzas para parejas. En español, calibrada para Perú: soles y
+**Una PWA de finanzas para parejas.** En español, calibrada para Perú: soles y
 dólares, tarjetas BCP, Yape, TEA, cuotas.
+
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-b68235?style=flat-square)](LICENSE)
+[![React 18](https://img.shields.io/badge/React-18-b68235?style=flat-square)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-b68235?style=flat-square)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-6-b68235?style=flat-square)](https://vite.dev)
+[![PWA](https://img.shields.io/badge/PWA-Workbox-b68235?style=flat-square)](https://vite-pwa-org.netlify.app)
 
 No pretende reemplazar al banco. Pretende responder dos preguntas que el banco
 no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 
+</div>
+
+> [!NOTE]
 > Proyecto personal, publicado por si le sirve a alguien más. Está hecho para
 > el caso de uso de una pareja concreta y se nota: la interfaz está solo en
 > español, el login exige Microsoft Entra ID y varios cálculos asumen
@@ -15,24 +26,13 @@ no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 
 ## Qué hace
 
-**Inicio.** Una cifra grande —lo que queda libre este mes— y debajo el ritmo
-de gasto contra el que se puede sostener. El gráfico compara tu acumulado con
-la diagonal de gastar parejo, con una marca en el día de hoy.
-
-**Movimientos.** La lista completa, agrupada por día, con búsqueda, filtros
-por tipo (variable, fijo, suscripción) y edición o borrado deslizando.
-
-**Recurrentes y suscripciones.** Detecta cargos que se repiten a partir de tus
-movimientos, avisa cuando cambia el precio, cuando falta un cobro y cuando hay
-duplicados. Pausa un recurrente automáticamente si registras el pago antes de
-tiempo, y lo reanuda solo al llegar la fecha.
-
-**Nosotros.** Reparto por persona de lo que ya está asignado, y una cola de
-movimientos sin autor para asignarlos rápido.
-
-**Tarjeta de crédito.** Utilización, fecha límite, ciclo, TEA, simulador de
-pago, estrategia de cuotas y proyección al cierre. Importa el PDF del estado
-de cuenta del BCP y lo parsea en el navegador.
+| Sección | Para qué sirve |
+|---|---|
+| **Inicio** | Una cifra grande, lo que queda libre este mes, y debajo el ritmo de gasto contra el que se puede sostener. El gráfico compara tu acumulado con la diagonal de gastar parejo, con una marca en el día de hoy. |
+| **Movimientos** | La lista completa, agrupada por día, con búsqueda, filtros por tipo (variable, fijo, suscripción) y edición o borrado deslizando. |
+| **Recurrentes y suscripciones** | Detecta cargos que se repiten a partir de tus movimientos, avisa cuando cambia el precio, cuando falta un cobro y cuando hay duplicados. Pausa un recurrente automáticamente si registras el pago antes de tiempo, y lo reanuda solo al llegar la fecha. |
+| **Nosotros** | Reparto por persona de lo que ya está asignado, y una cola de movimientos sin autor para asignarlos rápido. |
+| **Tarjeta de crédito** | Utilización, fecha límite, ciclo, TEA, simulador de pago, estrategia de cuotas y proyección al cierre. Importa el PDF del estado de cuenta del BCP y lo parsea en el navegador. |
 
 **Además:** presupuestos, metas de ahorro, patrimonio neto, recap anual,
 notificaciones push con un resumen diario y tipo de cambio en vivo.
@@ -96,7 +96,10 @@ npm test        # tests unitarios
 npm run lint
 ```
 
-### El registro en Entra ID
+<details>
+<summary><b>El registro en Entra ID</b></summary>
+
+<br />
 
 En el portal de Azure, **Entra ID → Registros de aplicaciones → Nueva**:
 
@@ -105,9 +108,16 @@ En el portal de Azure, **Entra ID → Registros de aplicaciones → Nueva**:
    desarrollo y tu dominio para producción.
 3. Copia el **Id. de aplicación** y el **Id. de directorio** a `.env`.
 
+</details>
+
 ---
 
 ## Desplegarlo
+
+<details>
+<summary><b>GitHub Actions a Azure App Service</b></summary>
+
+<br />
 
 Hay un workflow de GitHub Actions que despliega a Azure App Service en cada
 push a `master`: compila en el runner, arma un paquete solo con lo necesario
@@ -129,7 +139,12 @@ repositorio:
 
 Y en la configuración de la App Service, las mismas variables de `.env.example`.
 
-### Saber qué versión está desplegada
+</details>
+
+<details>
+<summary><b>Saber qué versión está desplegada</b></summary>
+
+<br />
 
 Cada build se sella con el SHA del commit. Un service worker sirve el HTML
 desde su caché, así que el primer refresco tras un despliegue todavía muestra
@@ -142,9 +157,12 @@ curl -s https://tu-dominio.example/healthz
 
 El mismo valor está en `<meta name="build">` del HTML servido.
 
----
+</details>
 
-## Notificaciones push (opcional)
+<details>
+<summary><b>Notificaciones push (opcional)</b></summary>
+
+<br />
 
 ```bash
 npx web-push generate-vapid-keys
@@ -154,12 +172,16 @@ Pon el par de claves y un `VAPID_SUBJECT` con un correo real en el entorno.
 Si falta cualquiera de los tres, los endpoints de push responden 503 y el
 resto del servidor funciona igual.
 
+</details>
+
 ---
 
 ## Licencia
 
-MIT — ver [LICENSE](LICENSE).
+MIT. Ver [LICENSE](LICENSE).
 
 ---
 
-Construido con [Claude Code](https://claude.com/claude-code).
+<div align="center">
+<sub>Construido con <a href="https://claude.com/claude-code">Claude Code</a>.</sub>
+</div>

@@ -256,8 +256,9 @@ function App() {
 
       // One-shot owner backfill: existing transactions/recurring imported
       // before the owner field existed have it as undefined. Per user
-      // preference, default those to "me" (Jorge). Items explicitly tagged
-      // 'shared' or 'partner' are left alone. Guarded by a localStorage
+      // preference, default those to "me" — the signed-in user. Items tagged
+      // 'shared' or 'partner' explicitly are left alone. Guarded by a
+      // localStorage
       // flag so we don't keep rewriting on every load.
       let txsAfterBackfill = loadedTransactions;
       let recAfterBackfill = fixedRecurring;

@@ -378,8 +378,8 @@ function Nosotros({
   const sinAsignar = reparto.asignados === 0;
 
   const personas = [
-    { id: 'jorge', nombre: labels.me, monto: reparto.jorge },
-    { id: 'zumy', nombre: labels.partner, monto: reparto.zumy },
+    { id: 'me', nombre: labels.me, monto: reparto.me },
+    { id: 'partner', nombre: labels.partner, monto: reparto.partner },
   ];
 
   const cubren = reparto.total > 0

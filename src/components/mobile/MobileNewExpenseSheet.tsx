@@ -36,7 +36,7 @@ export function MobileNewExpenseSheet({ onClose, onSave, onMoreOptions }: Mobile
   const labels = useOwnerLabels();
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('food');
-  const [paidBy, setPaidBy] = useState<PaidBy>('jorge');
+  const [paidBy, setPaidBy] = useState<PaidBy>('me');
   const hoy = useMemo(() => new Date(), []);
 
   const pulsar = (tecla: string) => {
@@ -56,15 +56,15 @@ export function MobileNewExpenseSheet({ onClose, onSave, onMoreOptions }: Mobile
   const valido = Number.isFinite(valor) && valor > 0;
 
   const personas: { id: PaidBy; label: string }[] = [
-    { id: 'jorge', label: labels.me },
-    { id: 'zumy', label: labels.partner },
+    { id: 'me', label: labels.me },
+    { id: 'partner', label: labels.partner },
     { id: 'both', label: 'Ambos' },
   ];
 
   const resumenPago =
     paidBy === 'both'
       ? `Se divide 50/50 entre ${labels.me} y ${labels.partner}`
-      : `Lo pagó ${paidBy === 'jorge' ? labels.me : labels.partner}`;
+      : `Lo pagó ${paidBy === 'me' ? labels.me : labels.partner}`;
 
   const guardar = () => {
     if (!valido) return;

@@ -155,7 +155,7 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
             <input
               type="email"
               className="form-input"
-              placeholder="ej. me@zumyalvarez.com"
+              placeholder="ej. sandra@ejemplo.com"
               value={partnerEmail}
               onChange={(e) => setPartnerEmail(e.target.value)}
             />

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   calcularResumenMes, gastoPorDia, mayoresDelMes, clasificar,
-  pendientesDeAsignar, repartoPorPersona, ocultar, serieRitmo,
+  pendientesDeAsignar, repartoPorPersona, ocultar, serieRitmo, normalizarPaidBy,
 } from '../homeMobile';
 import { RecurringTransaction, Transaction } from '../../types';
 
@@ -114,22 +114,43 @@ describe('clasificar', () => {
 
 describe('reparto y asignacion', () => {
   it('los pendientes salen ordenados por importe', () => {
-    const r = pendientesDeAsignar([tx('2026-09-01', 10), tx('2026-09-02', 900, { paidBy: 'jorge' }), tx('2026-09-03', 500)]);
+    const r = pendientesDeAsignar([tx('2026-09-01', 10), tx('2026-09-02', 900, { paidBy: 'me' }), tx('2026-09-03', 500)]);
     expect(r.map(t => t.amount)).toEqual([500, 10]);
   });
 
   it('«ambos» reparte mitad y mitad', () => {
-    const r = repartoPorPersona([tx('2026-09-01', 100, { paidBy: 'both' }), tx('2026-09-02', 60, { paidBy: 'jorge' })]);
-    expect(r.jorge).toBe(110);
-    expect(r.zumy).toBe(50);
+    const r = repartoPorPersona([tx('2026-09-01', 100, { paidBy: 'both' }), tx('2026-09-02', 60, { paidBy: 'me' })]);
+    expect(r.me).toBe(110);
+    expect(r.partner).toBe(50);
     expect(r.asignados).toBe(160);
+  });
+
+  // Lo escrito antes de neutralizar el tipo tiene que seguir contando igual:
+  // el archivo de datos no se reescribe, se traduce al leer.
+  it('sigue entendiendo los valores antiguos', () => {
+    const viejos = repartoPorPersona([
+      tx('2026-09-01', 100, { paidBy: 'jorge' } as never),
+      tx('2026-09-02', 40, { paidBy: 'zumy' } as never),
+    ]);
+    expect(viejos.me).toBe(100);
+    expect(viejos.partner).toBe(40);
+    expect(viejos.asignados).toBe(140);
+  });
+
+  it('traduce los valores antiguos y deja pasar los nuevos', () => {
+    expect(normalizarPaidBy('jorge')).toBe('me');
+    expect(normalizarPaidBy('zumy')).toBe('partner');
+    expect(normalizarPaidBy('me')).toBe('me');
+    expect(normalizarPaidBy('both')).toBe('both');
+    expect(normalizarPaidBy(undefined)).toBeUndefined();
+    expect(normalizarPaidBy('cualquier-otra-cosa')).toBeUndefined();
   });
 
   it('lo no asignado suma al total pero no a nadie', () => {
     const r = repartoPorPersona([tx('2026-09-01', 100)]);
     expect(r.total).toBe(100);
     expect(r.asignados).toBe(0);
-    expect(r.jorge).toBe(0);
+    expect(r.me).toBe(0);
   });
 });
 

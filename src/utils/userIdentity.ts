@@ -6,8 +6,8 @@ import { getMsalInstance } from '../auth/getToken';
  * Maps email addresses → owner roles, so the app can tag activity to the
  * right person when either member of the couple signs in.
  *
- *   'me'      → the primary user (Jorge by default)
- *   'partner' → the partner (configured email in Pareja settings)
+ *   'me'      → the signed-in user (e.g. Carlos)
+ *   'partner' → the partner (e.g. Sandra; email set in Pareja settings)
  *
  * Persisted in localStorage. The "me" email is taken from the currently
  * signed-in MSAL account if not set explicitly. The "partner" email is

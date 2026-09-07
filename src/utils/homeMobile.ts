@@ -1,4 +1,4 @@
-import { RecurringTransaction, Transaction } from '../types';
+import { PaidBy, RecurringTransaction, Transaction } from '../types';
 import { parseDateOnly } from './stableDate';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -152,30 +152,45 @@ export function pendientesDeAsignar(
     .slice(0, limite);
 }
 
+/**
+ * Traduce los valores que se guardaron cuando el tipo llevaba nombres
+ * propios. Todo lo que lea paidBy tiene que pasar por aqui: los movimientos
+ * ya escritos siguen diciendo 'jorge' y 'zumy', y no se reescribe el archivo
+ * --tocar datos financieros para renombrar una etiqueta no compensa--.
+ */
+export function normalizarPaidBy(valor: string | undefined): PaidBy | undefined {
+  if (!valor) return undefined;
+  if (valor === 'jorge') return 'me';
+  if (valor === 'zumy') return 'partner';
+  if (valor === 'me' || valor === 'partner' || valor === 'both') return valor;
+  return undefined;
+}
+
 /** Reparto por persona de lo ya asignado. */
 export function repartoPorPersona(transactions: Transaction[]): {
-  jorge: number;
-  zumy: number;
+  me: number;
+  partner: number;
   asignados: number;
   total: number;
 } {
-  let jorge = 0;
-  let zumy = 0;
+  let me = 0;
+  let partner = 0;
   let asignados = 0;
   let total = 0;
   for (const t of transactions) {
     if (t.type !== 'expense') continue;
     total += t.amount;
-    if (!t.paidBy) continue;
+    const quien = normalizarPaidBy(t.paidBy);
+    if (!quien) continue;
     asignados += t.amount;
-    if (t.paidBy === 'jorge') jorge += t.amount;
-    else if (t.paidBy === 'zumy') zumy += t.amount;
+    if (quien === 'me') me += t.amount;
+    else if (quien === 'partner') partner += t.amount;
     else {
-      jorge += t.amount / 2;
-      zumy += t.amount / 2;
+      me += t.amount / 2;
+      partner += t.amount / 2;
     }
   }
-  return { jorge: round2(jorge), zumy: round2(zumy), asignados: round2(asignados), total: round2(total) };
+  return { me: round2(me), partner: round2(partner), asignados: round2(asignados), total: round2(total) };
 }
 
 /** Enmascara una cifra cuando el modo privado esta activo. */

@@ -9,8 +9,16 @@ export type CurrencyType = 'PEN' | 'USD' | 'EUR';
 export type Owner = 'shared' | 'me' | 'partner';
 
 /** Quien pago un gasto. Opcional: los movimientos importados del banco no lo
- *  traen y no se debe inventar. */
-export type PaidBy = 'jorge' | 'zumy' | 'both';
+ *  traen y no se debe inventar.
+ *
+ *  Usa el mismo vocabulario que Owner --'me' y 'partner'-- en vez de nombres
+ *  propios: quien despliega esto no es la pareja para la que se escribio. Los
+ *  datos guardados antes traen los nombres viejos; normalizarPaidBy los
+ *  traduce al leer, asi que no hace falta reescribir ningun archivo.
+ *
+ *  'both' se mantiene aparte de 'shared' de Owner porque aqui significa una
+ *  cosa concreta: el gasto se reparte mitad y mitad. */
+export type PaidBy = 'me' | 'partner' | 'both';
 
 export interface Transaction {
   id: string;

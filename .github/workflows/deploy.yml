@@ -1,0 +1,168 @@
+name: Deploy to Azure App Service
+
+# Antes esto solo disparaba un sync de Kudu: el servidor hacia git fetch del
+# repo y compilaba. Dos problemas reales, ambos vistos en produccion:
+#
+#   1. Dos merges seguidos lanzaban dos syncs que se pisaban, y el que perdia
+#      dejaba desplegado un commit intermedio.
+#   2. El fetch podia fallar sin dejar rastro util (un "Fetching changes." y
+#      nada mas), y la app quedaba clavada en el commit anterior mientras
+#      Actions reportaba exito. Cuatro releases seguidos no llegaron a
+#      produccion asi.
+#
+# Ahora el runner compila y sube el resultado. No hay git fetch en el servidor
+# y la concurrencia la controla GitHub, no Kudu.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+# Un despliegue a la vez. Los que se acumulen mientras corre uno se descartan
+# salvo el ultimo: es exactamente lo que se quiere, porque el ultimo commit
+# contiene a los anteriores.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Sin la configuracion de Azure el trabajo se salta entero en vez de
+    # fallar. Quien clone el proyecto no tiene por que heredar un workflow en
+    # rojo por no desplegar a la infraestructura de otro; en cuanto define las
+    # variables del repositorio, empieza a correr solo.
+    if: vars.AZURE_WEBAPP_NAME != '' && vars.AZURE_RESOURCE_GROUP != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar tipos y tests
+        run: |
+          npx tsc --noEmit
+          npx vitest run
+
+      - name: Compilar el front
+        # Vite congela estos valores dentro del bundle en tiempo de compilacion,
+        # asi que tienen que estar AQUI, no en la configuracion de la App
+        # Service: ahi ya seria tarde. Ojo, el cliente de la SPA no es el mismo
+        # que el del login OIDC de este workflow.
+        env:
+          VITE_AZURE_CLIENT_ID: ${{ vars.VITE_AZURE_CLIENT_ID }}
+          VITE_AZURE_TENANT_ID: ${{ vars.VITE_AZURE_TENANT_ID }}
+        run: |
+          test -n "$VITE_AZURE_CLIENT_ID" || { echo "Falta la variable VITE_AZURE_CLIENT_ID"; exit 1; }
+          test -n "$VITE_AZURE_TENANT_ID" || { echo "Falta la variable VITE_AZURE_TENANT_ID"; exit 1; }
+          npm run build
+
+      - name: Armar el paquete
+        # El paquete va LISTO PARA EJECUTAR: dist/ ya compilado y solo las
+        # dependencias que server.cjs necesita en runtime.
+        #
+        # Antes se compilaba en el servidor y ahi murieron tres despliegues
+        # seguidos con "Deployment has been stopped due to SCM container
+        # restart": el plan Basic tiene 1.75 GB y compilar el front con
+        # pdfjs, tesseract y recharts se los come, asi que Kudu reciclaba el
+        # contenedor a mitad del build. El runner tiene memoria de sobra.
+        #
+        # Las versiones se toman de las que se acaban de instalar y probar,
+        # no de rangos que podrian resolver distinto alla.
+        run: |
+          mkdir -p package
+          cp server.cjs package/
+          cp -r dist package/dist
+          node -e "
+            const deps = ['express','cors','compression','jsonwebtoken','jwks-rsa','dotenv','web-push'];
+            const out = {
+              name: 'juntos-plus-1-server',
+              version: '1.0.0',
+              private: true,
+              scripts: { start: 'node server.cjs' },
+              dependencies: {},
+            };
+            for (const d of deps) out.dependencies[d] = require(d + '/package.json').version;
+            require('fs').writeFileSync('package/package.json', JSON.stringify(out, null, 2));
+            console.log(JSON.stringify(out.dependencies, null, 2));
+          "
+          cd package && npm install --omit=dev --no-audit --no-fund
+          zip -qr ../deploy.zip .
+          cd .. && echo "Tamano del paquete: $(du -h deploy.zip | cut -f1)"
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Subir el paquete
+        # --async true a proposito. Con --async false, az espera la respuesta
+        # HTTP de Kudu, pero el gateway de Azure corta a los ~230s y el plan
+        # Basic tarda mas que eso en instalar y compilar. El resultado era un
+        # 504 con el despliegue avanzando igual por detras: el workflow daba
+        # error sobre un deploy que en realidad iba bien.
+        run: |
+          az webapp deploy \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ vars.AZURE_WEBAPP_NAME }}" \
+            --src-path deploy.zip \
+            --type zip \
+            --async true
+
+      - name: Esperar a que el despliegue quede activo
+        # El estado real se consulta a la API de despliegues, que no depende
+        # de mantener una conexion HTTP abierta. 4 = correcto, 3 = fallido.
+        run: |
+          for i in $(seq 1 60); do
+            json=$(az rest --method get \
+              --url "https://${{ vars.AZURE_WEBAPP_NAME }}.scm.azurewebsites.net/api/deployments?\$top=1" \
+              --resource "https://management.azure.com/" 2>/dev/null || echo '[]')
+            status=$(echo "$json" | jq -r '.[0].status // "?"')
+            active=$(echo "$json" | jq -r '.[0].active // false')
+            id=$(echo "$json" | jq -r '.[0].id // "?" | .[0:8]')
+            echo "intento $i -> $id status=$status active=$active"
+            if [ "$status" = "4" ] && [ "$active" = "true" ]; then exit 0; fi
+            if [ "$status" = "3" ]; then
+              echo "El despliegue fallo en el servidor"
+              echo "$json" | jq -r '.[0].status_text // ""'
+              exit 1
+            fi
+            sleep 20
+          done
+          echo "El despliegue no quedo activo dentro del tiempo esperado"
+          exit 1
+
+      - name: Comprobar que responde
+        # Un deploy que "termina bien" pero deja la app caida no es un deploy
+        # bueno. Se le da tiempo a arrancar y se exige un healthz sano.
+        #
+        # La URL sale de la variable APP_URL del repositorio; si no esta, cae
+        # al dominio por defecto de App Service. Asi el workflow sirve tal
+        # cual a quien clone el proyecto, sin un dominio ajeno escrito dentro.
+        env:
+          APP_URL: ${{ vars.APP_URL || format('https://{0}.azurewebsites.net', vars.AZURE_WEBAPP_NAME) }}
+        run: |
+          echo "Comprobando $APP_URL/healthz"
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/healthz" || true)
+            echo "intento $i -> HTTP $code"
+            if [ "$code" = "200" ]; then
+              curl -s "$APP_URL/healthz"
+              echo
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "La app no respondio 200 en /healthz despues del despliegue"
+          exit 1

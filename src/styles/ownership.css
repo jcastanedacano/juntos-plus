@@ -1,0 +1,134 @@
+/* ─── Ownership tagging (couple-finance) ────────────────────── */
+
+/* Segmented control inside TransactionModal */
+.owner-segmented {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.owner-segmented-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 120ms ease;
+  font-family: var(--font-family);
+}
+.owner-segmented-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.owner-segmented-btn.active {
+  font-weight: 700;
+  color: var(--text-inverse);
+}
+.owner-segmented-btn.owner-shared.active  { background: var(--accent-green); }
+.owner-segmented-btn.owner-me.active      { background: var(--accent-blue); }
+.owner-segmented-btn.owner-partner.active { background: var(--accent-pink); }
+
+/* Filter chips above TransactionList */
+.owner-filter-chips {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  flex-wrap: wrap;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+.owner-chip {
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 120ms ease;
+  font-family: var(--font-family);
+}
+.owner-chip:hover { border-color: var(--border-hover); color: var(--text-primary); }
+.owner-chip.active {
+  font-weight: 700;
+  color: var(--text-inverse);
+  border-color: transparent;
+}
+.owner-chip.active:not(.owner-shared):not(.owner-me):not(.owner-partner) {
+  background: var(--accent-green);
+}
+.owner-chip.owner-shared.active  { background: var(--accent-green); }
+.owner-chip.owner-me.active      { background: var(--accent-blue); }
+.owner-chip.owner-partner.active { background: var(--accent-pink); }
+
+/* Tiny owner badge (initial in a colored dot) for transaction rows */
+.owner-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+.owner-badge.owner-shared  { background: var(--accent-green-soft);  color: var(--accent-green); }
+.owner-badge.owner-me      { background: var(--accent-blue-soft);   color: var(--accent-blue); }
+.owner-badge.owner-partner { background: var(--accent-pink-soft);   color: var(--accent-pink); }
+
+/* Ownership split card (Dashboard) */
+.split-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.split-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+.split-bar > span {
+  display: block;
+  height: 100%;
+  transition: width 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.split-bar .seg-shared  { background: var(--accent-green); }
+.split-bar .seg-me      { background: var(--accent-blue); }
+.split-bar .seg-partner { background: var(--accent-pink); }
+
+.split-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.split-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+.split-row .split-row-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+.split-row .split-row-meta {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-feature-settings: var(--tnum);
+}
+.split-row .split-row-amt {
+  font-family: var(--font-mono);
+  font-feature-settings: var(--tnum);
+  font-weight: 500;
+  color: var(--text-primary);
+}

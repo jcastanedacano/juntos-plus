@@ -1,0 +1,41 @@
+{
+  "name": "Juntos+1 — Finanzas en pareja",
+  "short_name": "Juntos+1",
+  "description": "Tu copiloto financiero en pareja: dashboard, recurrentes, crédito y consejos accionables.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0C0F14",
+  "theme_color": "#0C0F14",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nueva transacción",
+      "short_name": "Nueva",
+      "description": "Registrar un gasto o ingreso rápidamente",
+      "url": "/?action=new-transaction",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Escanear recibo",
+      "short_name": "Escanear",
+      "description": "Fotografiar un ticket o recibo",
+      "url": "/?action=scan-receipt",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "screenshots": []
+}

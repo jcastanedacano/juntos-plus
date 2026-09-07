@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D5B0"/>
+      <stop offset="100%" stop-color="#0E9E7E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded-square brand mark -->
+  <rect x="0" y="0" width="192" height="192" rx="42" fill="url(#bg)"/>
+
+  <!-- Letter J -->
+  <path
+    d="M 110 38 L 110 116 C 110 138 96 152 72 152 C 56 152 44 144 38 130 L 56 118 C 60 126 66 130 72 130 C 80 130 84 124 84 116 L 84 38 Z"
+    fill="#062019"
+  />
+
+  <!-- +1 badge -->
+  <g transform="translate(120 30)">
+    <rect x="0" y="0" width="50" height="32" rx="10" fill="#062019"/>
+    <text
+      x="25" y="22"
+      font-family="DM Sans, system-ui, Arial, sans-serif"
+      font-size="20" font-weight="700"
+      fill="#34D5B0" text-anchor="middle"
+    >+1</text>
+  </g>
+</svg>

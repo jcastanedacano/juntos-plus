@@ -1,0 +1,1245 @@
+/* ========================================================================
+   12-COLUMN DASHBOARD GRID SYSTEM
+   ======================================================================== */
+
+.dash-12 {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--gap-desktop, 16px);
+}
+
+.dash-col-12 { grid-column: span 12; }
+.dash-col-8  { grid-column: span 8; }
+.dash-col-7  { grid-column: span 7; }
+.dash-col-6  { grid-column: span 6; }
+.dash-col-5  { grid-column: span 5; }
+.dash-col-4  { grid-column: span 4; }
+
+/* Cards align to top of their grid cell */
+.dash-12 {
+  align-items: start;
+}
+
+/* Tablet: 8→12, 4→12, 6→12 */
+@media (max-width: 1024px) {
+  .dash-12 { gap: var(--gap-md, 12px); }
+  .dash-col-8  { grid-column: span 12; }
+  .dash-col-7  { grid-column: span 12; }
+  .dash-col-5  { grid-column: span 12; }
+  .dash-col-4  { grid-column: span 12; }
+  .dash-col-6  { grid-column: span 12; }
+}
+
+/* Mobile */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DISPONIBLE REAL CARD
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.disponible-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.disponible-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.disponible-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.disponible-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0.1rem 0 0;
+}
+
+.disponible-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+
+.disponible-amount {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-feature-settings: 'tnum' on, 'lnum' on;
+}
+
+.disponible-per-day {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-feature-settings: 'tnum' on;
+}
+
+.disponible-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background: var(--bg-elevated);
+  border-radius: 10px;
+  font-size: 0.8125rem;
+}
+
+.disponible-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.disponible-row.bold {
+  margin-top: 0.15rem;
+  font-weight: 700;
+}
+
+.disponible-row-label {
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.disponible-row.bold .disponible-row-label {
+  color: var(--text-primary);
+}
+
+.disponible-row-value {
+  font-weight: 500;
+  font-feature-settings: 'tnum' on;
+  flex-shrink: 0;
+}
+
+.disponible-row.bold .disponible-row-value {
+  font-weight: 700;
+}
+
+.disponible-divider {
+  border-top: 1px solid var(--border-color);
+  margin: 0.25rem 0;
+}
+
+.disponible-forecast {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.875rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-top: auto;
+}
+
+.disponible-forecast.positive {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.disponible-forecast.negative {
+  background: rgba(244, 63, 94, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+.forecast-icon { font-size: 0.9rem; }
+.forecast-msg  { flex: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FORMULA PANEL (shared)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.formula-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  /* WCAG 2.2 AA (2.5.8 Target Size Minimum) pide 24x24 CSS px. La variante
+     icon-only de este botón quedaba en ~30x20 y era fácil de errar al
+     hacer clic. El mínimo va en la base para que ninguna instancia futura
+     pueda encogerse por debajo del umbral. */
+  min-width: 24px;
+  min-height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.formula-btn:hover {
+  color: var(--text-secondary);
+  border-color: var(--accent-blue);
+}
+
+.formula-panel {
+  position: relative;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+}
+
+.formula-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.formula-close:hover { color: var(--text-primary); }
+
+.formula-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+}
+
+.formula-text {
+  display: block;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REGLA 50/30/20 CARD
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.rule-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.rule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.rule-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rule-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.rule-alert-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  background: rgba(244, 63, 94, 0.12);
+  color: var(--danger);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+}
+
+.rule-income-ref {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+}
+
+.rule-segments {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.segment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.segment-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.segment-emoji {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.segment-label {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.segment-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.segment-badge.alert-green  { background: rgba(34, 197, 94, 0.12);  color: var(--success); }
+.segment-badge.alert-yellow { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
+.segment-badge.alert-red    { background: rgba(244, 63, 94, 0.12);  color: var(--danger); }
+
+.segment-bar-wrap {
+  padding: 0 0;
+}
+
+.segment-bar-bg {
+  position: relative;
+  height: 8px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+  overflow: visible;
+}
+
+.segment-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.segment-target-marker {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 14px;
+  background: var(--text-muted);
+  border-radius: 1px;
+  transform: translateX(-50%);
+  opacity: 0.5;
+}
+
+.segment-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.segment-amount {
+  color: var(--text-secondary);
+  font-feature-settings: 'tnum' on;
+}
+
+.segment-pct {
+  font-weight: 700;
+  font-feature-settings: 'tnum' on;
+}
+
+.segment-pct-target {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.segment-overflow-msg {
+  font-size: var(--fs-micro);
+  color: var(--danger);
+  padding: 0.2rem 0.5rem;
+  background: rgba(244, 63, 94, 0.06);
+  border-radius: 4px;
+  margin-top: 0.1rem;
+}
+
+/* ========================================================================
+   TOP SPENDING CARD
+   ======================================================================== */
+
+.top-spending-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-spending-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.75rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.top-spending-tabs {
+  display: flex;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+  margin: 0 1rem 0.5rem;
+}
+
+.top-spending-tabs button {
+  flex: 1;
+  padding: 5px 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.top-spending-tabs button.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.top-spending-freq {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: var(--fs-micro);
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 400;
+}
+
+/* Legacy toggle alias */
+.top-spending-toggle { display: flex; background: var(--bg-elevated); border-radius: 8px; padding: 2px; gap: 2px; }
+.top-spending-toggle button { padding: 4px 10px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-size: 0.7rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.top-spending-toggle button.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+
+.top-spending-list {
+  flex: 1;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.top-spending-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.25rem;
+}
+
+.top-spending-rank {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.top-spending-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.top-spending-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.top-spending-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+
+.top-spending-bar-track {
+  height: 4px;
+  background: var(--border-color);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.top-spending-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.top-spending-amount {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.top-spending-value {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.top-spending-pct {
+  display: block;
+  font-size: var(--fs-micro);
+  color: var(--text-muted);
+}
+
+.top-spending-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.65rem;
+  border: none;
+  border-top: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: auto;
+}
+
+.top-spending-more:hover {
+  background: var(--bg-elevated);
+}
+
+/* Top Spending Drawer */
+.top-spending-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+}
+
+.top-spending-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  max-width: 90vw;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border-color);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.top-spending-drawer--open {
+  transform: translateX(0);
+}
+
+.top-spending-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.top-spending-drawer-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.top-spending-drawer-header button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.top-spending-drawer-header button:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.top-spending-drawer-body {
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+/* ========================================================================
+   SUBSCRIPTIONS PANEL (Dashboard)
+   ======================================================================== */
+
+.subs-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 700px;
+}
+
+.subs-panel-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.subs-panel-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* KPI strip */
+.subs-kpi-strip {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 1rem 0.75rem;
+  flex-wrap: wrap;
+}
+
+.subs-kpi {
+  flex: 1;
+  min-width: 70px;
+  padding: 0.5rem;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.subs-kpi-value {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.subs-kpi-label {
+  display: block;
+  font-size: var(--fs-micro);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.subs-kpi-alert .subs-kpi-value {
+  color: var(--warning);
+}
+
+/* Filter tabs */
+.subs-filter-tabs {
+  display: flex;
+  padding: 0 1rem 0.5rem;
+  gap: 4px;
+}
+
+.subs-filter-tabs button {
+  padding: 3px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--fs-micro);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.subs-filter-tabs button.active {
+  background: var(--primary);
+  color: var(--text-inverse);
+  border-color: var(--primary);
+  font-weight: 700;
+}
+
+/* Subscription list */
+.subs-list {
+  overflow-y: auto;
+  padding: 0 0.75rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.subs-item {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+  min-height: 48px;
+  flex-shrink: 0;
+}
+
+.subs-item:hover {
+  border-color: var(--border-hover);
+}
+
+.subs-item.dismissed {
+  opacity: 0.5;
+}
+
+.subs-item.confirmed {
+  border-color: rgba(34,211,166,0.3);
+}
+
+.subs-item-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  gap: 0.5rem;
+}
+
+.subs-item-left {
+  min-width: 0;
+  flex: 1;
+}
+
+.subs-item-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.subs-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.subs-freq-badge {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(96,165,250,0.12);
+  color: var(--primary);
+}
+
+.subs-item-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.subs-item-amount {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.subs-item-monthly {
+  margin-top: 1px;
+}
+
+/* Detail expanded */
+.subs-item-detail {
+  border-top: 1px solid var(--border-color);
+  padding: 0.75rem;
+  background: var(--bg-elevated);
+}
+
+.subs-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.subs-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.subs-detail-item svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.subs-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 0.5rem;
+}
+
+.subs-alert {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-micro);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.subs-alert-warning {
+  background: rgba(245,158,11,0.1);
+  color: var(--warning);
+}
+
+.subs-alert-danger {
+  background: rgba(244,63,94,0.1);
+  color: var(--danger);
+}
+
+.subs-alert-info {
+  background: rgba(96,165,250,0.1);
+  color: var(--primary);
+}
+
+/* Actions */
+.subs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 0.5rem;
+}
+
+.subs-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.subs-action-btn.confirm {
+  color: var(--success);
+  border-color: rgba(34,211,166,0.3);
+}
+.subs-action-btn.confirm:hover {
+  background: rgba(34,211,166,0.1);
+}
+
+.subs-action-btn.dismiss {
+  color: var(--danger);
+  border-color: rgba(244,63,94,0.3);
+}
+.subs-action-btn.dismiss:hover {
+  background: rgba(244,63,94,0.1);
+}
+
+.subs-action-btn.silence {
+  color: var(--text-muted);
+}
+.subs-action-btn.silence:hover {
+  background: var(--bg-hover);
+}
+
+.subs-action-btn.view {
+  color: var(--primary);
+  border-color: rgba(96,165,250,0.3);
+}
+.subs-action-btn.view:hover {
+  background: rgba(96,165,250,0.1);
+}
+
+/* Transaction list inside sub */
+.subs-tx-list {
+  margin-top: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.subs-tx-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.6rem;
+  font-size: var(--fs-micro);
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.subs-tx-row:last-child {
+  border-bottom: none;
+}
+
+.subs-tx-date {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  width: 70px;
+}
+
+.subs-tx-desc {
+  flex: 1;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subs-tx-amount {
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SUBSCRIPTION CALENDAR
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sub-cal-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.sub-cal-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Summary strip */
+.sub-cal-summary {
+  display: flex;
+  gap: 1rem;
+  padding: 0.875rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.sub-cal-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.sub-cal-stat-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-feature-settings: 'tnum' on;
+}
+
+.sub-cal-stat-label {
+  font-size: var(--fs-micro);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Calendar grid — 7 columns like a real calendar */
+.sub-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.875rem;
+}
+
+.sub-cal-day {
+  min-height: 72px;
+  border-radius: 8px;
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: var(--bg-elevated);
+  transition: background 0.15s;
+}
+
+.sub-cal-day.today {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.sub-cal-day.has-charges {
+  background: rgba(244, 63, 94, 0.04);
+}
+
+.sub-cal-day-num {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.sub-cal-weekday {
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.sub-cal-date-n {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.sub-cal-day.today .sub-cal-date-n {
+  color: var(--accent-blue);
+}
+
+/* Charges inside a day */
+.sub-cal-charges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.1rem;
+}
+
+.sub-cal-chip {
+  display: block;
+  width: 100%;
+  padding: 0.15rem 0.3rem;
+  border-radius: 4px;
+  border: none;
+  background: rgba(244, 63, 94, 0.12);
+  color: var(--danger);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.sub-cal-chip:hover {
+  background: rgba(244, 63, 94, 0.22);
+}
+
+.sub-cal-chip-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub-cal-chip-more {
+  font-size: var(--fs-micro);
+  color: var(--text-muted);
+  padding-left: 0.3rem;
+}
+
+.sub-cal-day-total {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  color: var(--danger);
+  text-align: right;
+  margin-top: 0.1rem;
+  font-feature-settings: 'tnum' on;
+}
+
+/* Upcoming list below calendar */
+.sub-cal-list {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sub-cal-list-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sub-cal-list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--bg-elevated);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+  width: 100%;
+}
+
+.sub-cal-list-row:hover {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  outline: 1px solid var(--border-color);
+}
+
+.sub-cal-list-date {
+  width: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sub-cal-list-day {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  line-height: 1;
+}
+
+.sub-cal-list-month {
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.sub-cal-list-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.sub-cal-list-name {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub-cal-list-when {
+  font-size: var(--fs-micro);
+  color: var(--text-muted);
+}
+
+.sub-cal-list-amount {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--danger);
+  flex-shrink: 0;
+  font-feature-settings: 'tnum' on;
+}
+
+/* Responsive: collapse calendar to 5 cols on tablet */
+
+/* Bloques plegados a la escala de tres tiers (480 / 768 / 1024).
+   Van al final del archivo a proposito: antes vivian en un breakpoint
+   mas estrecho y ganaban por ser mas especificos en anchura. Al
+   compartir tier, lo unico que decide es el orden. */
+@media (max-width: 768px) {
+  .dash-12 { gap: var(--gap-sm, 8px); }
+}
+
+@media (max-width: 1024px) {
+  .sub-cal-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .sub-cal-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

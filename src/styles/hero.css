@@ -1,0 +1,295 @@
+/* ─── Dashboard Hero (F2) ─────────────────────────────────────── */
+.hero {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+
+.hero-left {
+  padding: 28px 32px;
+  border-right: 1px solid var(--border);
+}
+
+
+.hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+.hero-eyebrow .pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  position: relative;
+}
+.hero-eyebrow .pulse::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent-green);
+  opacity: 0.4;
+  animation: hero-pulse 1.6s ease-out infinite;
+}
+@keyframes hero-pulse {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+.hero-amount {
+  font-size: 56px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-feature-settings: var(--tnum);
+  color: var(--text-primary);
+}
+.hero-amount .currency {
+  font-size: 26px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.hero-amount .cents {
+  font-size: 32px;
+  color: var(--text-secondary);
+}
+.hero-amount.negative {
+  color: var(--accent-red);
+}
+
+.hero-meaning {
+  margin-top: 14px;
+  color: var(--text-secondary);
+  font-size: 14.5px;
+  max-width: 460px;
+  line-height: 1.5;
+}
+.hero-meaning strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.hero-meaning .eom-pos { color: var(--accent-green); }
+.hero-meaning .eom-neg { color: var(--accent-red); }
+
+/* ─── Secondary currency strip (Pattern B: dominant + chip) ──── */
+.hero-secondary-currency {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--accent-blue-soft);
+  border: 1px solid rgba(108, 142, 239, 0.2);
+  border-radius: 10px;
+  cursor: help;
+}
+.hero-secondary-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+.hero-secondary-pill {
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  font-feature-settings: var(--tnum);
+  color: var(--text-primary);
+  font-weight: 500;
+  padding: 2px 8px;
+  background: var(--bg-elevated);
+  border-radius: 6px;
+}
+
+.hero-progress {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hero-progress .progress-bar {
+  height: 8px;
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  display: flex;
+  overflow: hidden;
+}
+.hero-progress .progress-bar > span {
+  display: block;
+  height: 100%;
+  transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hero-progress .seg-spent { background: var(--accent-amber); }
+.hero-progress .seg-committed { background: var(--accent-blue); }
+.hero-progress .seg-free { background: var(--accent-green); }
+
+/* Overspend state: a full amber bar reads as "100% complete / on track",
+   which is backwards when disponibleAjustado has gone negative. Break the
+   "solid = good" pattern with a red diagonal stripe + a pulsing edge so
+   overrun is unmistakable even before reading the legend numbers. */
+.hero-progress .seg-spent--over {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--accent-red) 0px,
+    var(--accent-red) 6px,
+    var(--accent-red-light) 6px,
+    var(--accent-red-light) 12px
+  );
+}
+.hero-progress .progress-bar--over {
+  box-shadow: 0 0 0 1px var(--accent-red-soft);
+}
+.hero-progress .legend-item--danger .num--danger {
+  color: var(--accent-red);
+  font-weight: 700;
+}
+.hero-progress .progress-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.hero-progress .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-progress .legend-item .num {
+  font-family: var(--font-mono);
+  font-feature-settings: var(--tnum);
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-left: 2px;
+}
+.hero-progress .legend-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* ─── Ritmo del mes (right pane) ──────────────────────────────── */
+.hero-right {
+  padding: 28px 32px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 18px;
+}
+.hero-right h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin: 0;
+}
+.hero-right-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.hero-fx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--accent-green);
+  background: var(--accent-green-soft);
+  border: 1px solid rgba(0, 209, 178, 0.25);
+  border-radius: 999px;
+  font-family: var(--font-family);
+  cursor: help;
+}
+.hero-fx-chip strong {
+  font-family: var(--font-mono);
+  font-feature-settings: var(--tnum);
+  color: var(--text-primary);
+  font-weight: 700;
+  margin: 0 2px;
+}
+.pace-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pace-row:last-of-type {
+  border-bottom: none;
+}
+.pace-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.pace-value {
+  font-size: 14.5px;
+  font-weight: 500;
+  font-feature-settings: var(--tnum);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+.pace-value .num {
+  font-family: var(--font-mono);
+}
+.pace-value.up { color: var(--accent-green); }
+.pace-value.down { color: var(--accent-red); }
+
+/* ─── Delta pills ─────────────────────────────────────────────── */
+.delta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  font-feature-settings: var(--tnum);
+}
+.delta-pill.up {
+  background: var(--accent-green-soft);
+  color: var(--accent-green);
+}
+.delta-pill.down {
+  background: var(--accent-red-soft);
+  color: var(--accent-red);
+}
+.delta-pill.flat {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+/* Bloques plegados a la escala de tres tiers (480 / 768 / 1024).
+   Van al final del archivo a proposito: antes vivian en un breakpoint
+   mas estrecho y ganaban por ser mas especificos en anchura. Al
+   compartir tier, lo unico que decide es el orden. */
+@media (max-width: 1024px) {
+  .hero { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 1024px) {
+  .hero-left { border-right: none; border-bottom: 1px solid var(--border); }
+}

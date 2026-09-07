@@ -1,0 +1,288 @@
+/* Design Tokens - Fintech Premium Theme */
+:root {
+  /* Typography */
+  --font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-feature-tabular: 'tnum' on, 'lnum' on;
+  --tnum: 'tnum' on, 'lnum' on;
+  --tracking-tight: -0.01em;
+
+  /* Font Sizes — 6-tier scale */
+  --font-size-xs: 0.6875rem;     /* 11px - captions, badges */
+  --font-size-sm: 0.75rem;       /* 12px - labels, chips */
+  --font-size-base: 0.8125rem;   /* 13px - body text */
+  --font-size-md: 0.875rem;      /* 14px - emphasized text */
+  --font-size-lg: 1rem;          /* 16px - primary copy */
+  --font-size-xl: 1.25rem;       /* 20px - section titles */
+  --font-size-2xl: 1.75rem;      /* 28px - page headings */
+
+  /* Backgrounds - Graphite Dark Theme */
+  --bg-base: #0C0F14;
+  --bg-surface: #12151C;
+  --bg-card: #161A22;
+  --bg-elevated: #1C2028;
+  --bg-hover: #22262E;
+
+  /* Borders */
+  --border: #1F2330;
+  --border-hover: #2A2E3A;
+  --border-active: #363B48;
+  --ring: rgba(255, 255, 255, 0.05);
+
+  /* Text */
+  --text-primary: #E8ECF1;
+  --text-secondary: #8E95A9;
+  --text-muted: #5F6780;
+  --text-inverse: #0C0F14;
+
+  /* Accents */
+  --accent-green: #00D1B2;
+  --accent-green-light: #33E8C7;
+  --accent-green-dark: #00B89C;
+  --accent-green-soft: rgba(0, 209, 178, 0.12);
+  --accent-blue: #6C8EEF;
+  --accent-blue-light: #8DA8F5;
+  --accent-blue-soft: rgba(108, 142, 239, 0.12);
+  --accent-pink: #D946EF;
+  --accent-pink-light: #E879F9;
+  --accent-pink-soft: rgba(217, 70, 239, 0.12);
+  --accent-amber: #F59E0B;
+  --accent-amber-light: #FBBF24;
+  --accent-amber-soft: rgba(245, 158, 11, 0.12);
+  --accent-red: #FF6B81;
+  --accent-red-light: #FF8A9E;
+  --accent-red-soft: rgba(255, 107, 129, 0.12);
+
+  /* Semantic Colors */
+  --success: #00D1B2;
+  --success-bg: rgba(0, 209, 178, 0.1);
+  --success-border: rgba(0, 209, 178, 0.25);
+  --danger: #FF6B81;
+  --danger-bg: rgba(255, 107, 129, 0.1);
+  --danger-border: rgba(255, 107, 129, 0.25);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --warning-border: rgba(245, 158, 11, 0.25);
+  --info: #6C8EEF;
+  --info-bg: rgba(108, 142, 239, 0.1);
+  --info-border: rgba(108, 142, 239, 0.25);
+
+  /* Legacy compatibility */
+  --bg-primary: var(--bg-base);
+  --bg-secondary: var(--bg-card);
+  --bg-tertiary: var(--bg-surface);
+  --text-primary-legacy: var(--text-primary);
+  --border-color: var(--border);
+  --primary: var(--accent-green);
+  --accent: var(--accent-green);
+  --accent-teal: var(--accent-green);
+
+  /* Spacing - 8px micro-grid */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+  --spacing-3xl: 48px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-card: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Shadows - Dark Theme (more subtle) */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
+  --shadow-glow-green: 0 0 20px rgba(0, 209, 178, 0.3);
+  --shadow-glow-blue: 0 0 20px rgba(108, 142, 239, 0.3);
+  --shadow-glow-pink: 0 0 20px rgba(217, 70, 239, 0.3);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+  --transition-bounce: 300ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Layout */
+  --sidebar-collapsed: 72px;
+  --sidebar-expanded: 256px;
+  --header-height: 64px;
+  --content-max-width: 1600px;
+  --gap-desktop: 16px;
+  --gap-md: 12px;
+  --gap-sm: 8px;
+
+  /* Z-indexes */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal-backdrop: 900;
+  --z-modal: 1000;
+  --z-toast: 1100;
+
+  /* Transaction Section Tokens */
+  --txn-bg-base: #0E1118;
+  --txn-bg-panel: #11141B;
+  --txn-bg-card: #161A22;
+  --txn-border: #1F2330;
+  --txn-text-primary: #E8ECF1;
+  --txn-text-secondary: #8E95A9;
+  --txn-text-muted: #5F6780;
+  --txn-success: #00D1B2;
+  --txn-danger: #FF6B81;
+  --txn-info: #6C8EEF;
+  --txn-positive: #00D1B2;
+  --txn-negative: #FF6B81;
+  --txn-recurring: #a855f7;
+  --txn-row-height: 48px;
+  --txn-row-height-compact: 40px;
+  --txn-drawer-width: 420px;
+
+  /* Recurring Section Tokens */
+  --rec-bg-base: var(--txn-bg-base);
+  --rec-bg-panel: var(--txn-bg-panel);
+  --rec-bg-card: var(--txn-bg-card);
+  --rec-border: var(--txn-border);
+  --rec-text-primary: var(--txn-text-primary);
+  --rec-text-secondary: var(--txn-text-secondary);
+  --rec-text-muted: var(--txn-text-muted);
+  --rec-success: var(--txn-success);
+  --rec-danger: var(--txn-danger);
+  --rec-info: var(--txn-info);
+  --rec-row-height: 56px;
+  --rec-drawer-width: 440px;
+  --rec-calendar-dot: 6px;
+  --rec-toggle-width: 44px;
+  --rec-toggle-height: 22px;
+  --rec-badge-bg: rgba(108, 142, 239, 0.12);
+  --rec-badge-text: #8DA8F5;
+  --rec-increase-bg: rgba(255, 107, 129, 0.12);
+  --rec-increase-text: #FF8A9E;
+
+  /* Goals Section Tokens */
+  --goal-bg-base: var(--txn-bg-base);
+  --goal-bg-panel: var(--txn-bg-panel);
+  --goal-bg-card: var(--txn-bg-card);
+  --goal-border: var(--txn-border);
+  --goal-text-primary: var(--txn-text-primary);
+  --goal-text-secondary: var(--txn-text-secondary);
+  --goal-text-muted: var(--txn-text-muted);
+  --goal-success: var(--txn-success);
+  --goal-danger: var(--txn-danger);
+  --goal-info: var(--txn-info);
+  --goal-warning: #f59e0b;
+  --goal-card-min: 320px;
+  --goal-row-height: 72px;
+  --goal-drawer-width: 440px;
+  --goal-progress-height: 10px;
+  --goal-progress-height-lg: 14px;
+
+  /* Mobile App Shell Tokens */
+  --mobile-topbar-height: 56px;
+  --mobile-bottomtab-height: 64px;
+  --mobile-fab-size: 56px;
+  --mobile-card-radius: 16px;
+  --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-safe-top: env(safe-area-inset-top, 0px);
+}
+
+/* Gradients */
+.gradient-green {
+  background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-green-light) 100%);
+}
+
+.gradient-blue {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-light) 100%);
+}
+
+.gradient-pink {
+  background: linear-gradient(135deg, var(--accent-pink) 0%, var(--accent-pink-light) 100%);
+}
+
+.gradient-card {
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+}
+
+/* Glass Effect */
+.glass {
+  background: rgba(22, 26, 34, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Utility Classes */
+.text-gradient-green {
+  background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-green-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-blue {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Tamano de las etiquetas y textos auxiliares.
+   Estaba escrito a mano como 0.6875rem (11px) en mas de 100 sitios. Como
+   token se puede subir en el celular sin tocar cada regla: 11px se lee bien
+   en un monitor pero no en un telefono a un brazo de distancia. */
+:root {
+  --fs-micro: 0.6875rem;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --fs-micro: 0.78rem;
+  }
+}
+
+/* ── Barras de desplazamiento ──────────────────────────────────────────────
+   La barra por defecto de Windows es gruesa, clara y con flechas: un bloque
+   blanco encima de una interfaz oscura. Aparecia en Suscripciones, en
+   Recurrentes y en cualquier otra zona con overflow.
+
+   Se resuelve una sola vez y global porque la app tiene 22 zonas scrollables:
+   arreglarlas de a una deja fuera las que no miramos y garantiza que la
+   proxima nazca mal. Las reglas puntuales que ocultan la barra en los
+   carruseles del movil ganan igual por especificidad. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Las flechas de los extremos son de Windows y no existen en Mac; quitarlas
+   deja la barra igual en los dos. */
+*::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Esquina donde se cruzan la barra vertical y la horizontal. */
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}

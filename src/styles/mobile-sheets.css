@@ -1,0 +1,127 @@
+/* Modales como hojas inferiores en movil
+   -------------------------------------
+   Los selectores van duplicados (.modal.modal) a proposito: las reglas base
+   de .modal viven en App.css DESPUES de los @import, asi que a igual
+   especificidad ganan siempre por orden. Duplicar la clase sube la
+   especificidad y hace que esto no dependa de donde se importe el archivo.
+*/
+/* ═══════════════════════════════════════════════════════════════════════
+   MODALES COMO HOJAS INFERIORES
+   ═══════════════════════════════════════════════════════════════════════
+   Los 10 modales de la app se abrian en el celular como un dialogo centrado
+   de escritorio: angosto, flotando al medio y con el boton de cerrar arriba a
+   la derecha, lejos del pulgar. Ya existia MobileBottomSheet pero solo lo
+   usaba el menu "Mas".
+
+   En vez de reescribir los 10 componentes, se adapta el contenedor comun.
+   Se usa media query y no la clase .is-mobile para que valga aunque el modal
+   se monte fuera del arbol que lleva esa clase. */
+
+@media (max-width: 768px) {
+  .modal-overlay.modal-overlay {
+    /* Pegada abajo: es donde llega el pulgar. */
+    align-items: flex-end;
+  }
+
+  .modal.modal {
+    width: 100%;
+    max-width: none;
+    /* Deja ver un poco de la pantalla de atras, que ayuda a entender que es
+       una capa temporal y no otra pantalla. */
+    max-height: 88vh;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    padding: 0.75rem 1.25rem;
+    /* Respeta el indicador de inicio del iPhone. */
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    animation: sheetUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* Barrita superior: la senal universal de "esto se arrastra". */
+  .modal.modal::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 0.75rem;
+    border-radius: 999px;
+    background: var(--border-color);
+  }
+
+  /* El encabezado queda a la vista al desplazar un formulario largo, para no
+     tener que volver arriba a buscar el boton de cerrar. */
+  .modal-header.modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--bg-card);
+    margin: 0 -1.25rem;
+    padding: 0 1.25rem 0.75rem;
+  }
+
+  .modal-title.modal-title {
+    font-size: 1.05rem;
+  }
+
+  /* 44px es el minimo comodo para el pulgar; el boton tenia el tamano del
+     icono. */
+  .modal.modal .close-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Los botones de accion ocupan el ancho: mas faciles de acertar y dejan
+     claro cual es el paso siguiente. */
+  .modal.modal .btn-primary,
+  .modal.modal .btn-secondary {
+    min-height: 48px;
+    flex: 1;
+  }
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* Quien pidio menos movimiento recibe la hoja ya puesta, sin deslizamiento. */
+@media (prefers-reduced-motion: reduce) {
+  .modal.modal {
+    animation: none;
+  }
+}
+
+/* Excepciones al tamano de etiqueta
+   --------------------------------
+   --fs-micro sube a 12.5px en el celular, pero estas viven en celdas de ancho
+   fijo --las pestanas de abajo y las casillas del calendario-- donde crecer
+   las desborda en vez de hacerlas mas legibles. Se quedan en 11px. */
+@media (max-width: 768px) {
+  .mobile-tab-label,
+  .rec-calendar-day,
+  .rec-calendar-dayname,
+  .heatmap-legend-label {
+    font-size: 0.6875rem;
+  }
+}
+
+/* Zonas de toque
+   -------------
+   Las clases de boton de la app no declaran altura, y las vistas nuevas usan
+   rellenos de 0.2 a 0.4rem: eso deja botones de unos 26px, por debajo de los
+   44px que se consideran comodos para el pulgar. Se aplica por elemento y no
+   por clase porque 30 de esos botones estan con estilos inline y no tienen
+   ninguna clase a la que apuntar. */
+@media (max-width: 768px) {
+  button,
+  [role="button"] {
+    min-height: 44px;
+  }
+
+  /* Las pestanas de abajo ya tienen su propia altura; forzarlas solo estira
+     la barra. Los chips dentro de una tira que se desliza tampoco necesitan
+     44px de alto, alcanza con que la tira sea comoda. */
+  .mobile-tab {
+    min-height: 0;
+  }
+}

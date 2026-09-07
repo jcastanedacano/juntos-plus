@@ -1,0 +1,914 @@
+/* ─── Credit Card View ───────────────────────────────────────────── */
+
+.credit-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* KPI strip */
+.credit-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+
+
+.credit-kpi {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.credit-kpi-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.credit-kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.credit-kpi-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.credit-util-bar {
+  margin-top: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.credit-util-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+/* Warning card (cost of paying minimum) */
+.credit-warning {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  color: var(--text-primary);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.credit-warning > svg {
+  color: var(--accent-red, #dc2626);
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.credit-warning-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.credit-warning-detail {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Slider */
+.credit-slider-wrap {
+  padding: 12px 0 4px;
+}
+
+.credit-slider {
+  width: 100%;
+  appearance: none;
+  height: 6px;
+  background: linear-gradient(
+    to right,
+    var(--accent-green, #16a34a),
+    var(--accent-amber, #f59e0b),
+    var(--accent-red, #dc2626)
+  );
+  border-radius: 999px;
+  outline: none;
+}
+
+.credit-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.credit-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.credit-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* Output pills */
+.credit-slider-output {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 0 4px;
+}
+
+.credit-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.credit-pill--save {
+  background: rgba(22, 163, 74, 0.12);
+  color: var(--accent-green, #16a34a);
+}
+
+/* Headline payment */
+.credit-payment-headline {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 0 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  margin-top: 8px;
+}
+
+.credit-payment-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.credit-payment-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.credit-payment-salary {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Breakdown */
+.credit-payment-breakdown {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+
+
+.credit-payment-breakdown > div {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.credit-bd-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.credit-bd-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* USD analysis section inside the simulator card */
+
+.credit-usd-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.credit-usd-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-green);
+  margin-bottom: 10px;
+}
+
+.credit-usd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+
+
+.credit-usd-grid > div {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.credit-usd-note {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(52, 213, 176, 0.06);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Installments */
+.credit-installments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.credit-inst-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.credit-inst-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.credit-inst-desc {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.credit-inst-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.credit-inst-amounts {
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.credit-inst-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.credit-inst-breakdown {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ─── Advice cards (F2/F3/F4) ─────────────────────────────────────── */
+
+.credit-advice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.credit-advice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.credit-advice-icon {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.credit-advice-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.credit-advice-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.credit-advice-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.credit-advice-highlight {
+  margin-left: auto;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.credit-advice-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.credit-advice-action {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.credit-advice--success {
+  background: rgba(22, 163, 74, 0.07);
+  border-color: rgba(22, 163, 74, 0.20);
+}
+.credit-advice--success .credit-advice-icon { color: var(--accent-green, #16a34a); }
+.credit-advice--success .credit-advice-highlight { color: var(--accent-green, #16a34a); }
+
+.credit-advice--info {
+  background: rgba(59, 130, 246, 0.06);
+  border-color: rgba(59, 130, 246, 0.18);
+}
+.credit-advice--info .credit-advice-icon { color: #2563eb; }
+.credit-advice--info .credit-advice-highlight { color: #2563eb; }
+
+.credit-advice--warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+.credit-advice--warning .credit-advice-icon { color: var(--accent-amber, #f59e0b); }
+.credit-advice--warning .credit-advice-highlight { color: var(--accent-amber, #f59e0b); }
+
+.credit-advice--danger {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.25);
+}
+.credit-advice--danger .credit-advice-icon { color: var(--accent-red, #dc2626); }
+.credit-advice--danger .credit-advice-highlight { color: var(--accent-red, #dc2626); }
+
+/* Installment ranking badges */
+.credit-inst-rank {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.credit-inst-row--prio-1 .credit-inst-rank {
+  background: rgba(220, 38, 38, 0.18);
+  color: var(--accent-red, #dc2626);
+}
+
+.credit-inst-row--prio-2 .credit-inst-rank {
+  background: rgba(245, 158, 11, 0.18);
+  color: var(--accent-amber, #f59e0b);
+}
+
+.credit-installments-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(59, 130, 246, 0.06);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Manual edit card */
+
+.credit-edit-toggle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.18));
+  background: transparent;
+  color: var(--text-secondary, #d1d5db);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.credit-edit-toggle:hover {
+  border-color: var(--accent-green, #34d5b0);
+  color: var(--accent-green, #34d5b0);
+  background: rgba(52, 213, 176, 0.06);
+}
+
+.credit-edit-card .dr-card-action {
+  margin-left: auto;
+}
+
+.credit-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 14px;
+  padding-top: 8px;
+}
+
+
+
+.credit-edit-grid-full {
+  grid-column: 1 / -1;
+}
+
+.credit-edit-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.credit-edit-grid label > span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.credit-edit-grid input {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--text-primary, #fff);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.credit-edit-grid input:focus {
+  outline: none;
+  border-color: var(--accent-green, #34d5b0);
+  box-shadow: 0 0 0 3px rgba(52, 213, 176, 0.15);
+}
+
+.credit-edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  flex-wrap: wrap;
+}
+
+.credit-edit-actions-right {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.credit-edit-reset {
+  background: transparent;
+  border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.18));
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.credit-edit-reset:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+.credit-edit-mini {
+  margin-left: 8px;
+  background: rgba(52, 213, 176, 0.10);
+  border: 1px solid rgba(52, 213, 176, 0.25);
+  color: var(--accent-green);
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  vertical-align: middle;
+}
+
+.credit-edit-mini:hover {
+  background: rgba(52, 213, 176, 0.18);
+}
+
+.credit-edit-cancel,
+.credit-edit-save {
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.credit-edit-cancel {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+}
+
+.credit-edit-save {
+  background: var(--accent-green, #34d5b0);
+  color: #062019;
+}
+
+.credit-edit-save:hover {
+  filter: brightness(1.05);
+}
+
+/* ─── F6 · Meta de utilización (barra de progreso) ─────────────── */
+
+.credit-goal-bar {
+  margin-bottom: 12px;
+}
+
+.credit-goal-bar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.credit-goal-bar-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10.5px;
+}
+
+.credit-goal-bar-stat {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.credit-goal-bar-track {
+  position: relative;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.credit-goal-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+/* Optional target marker (commented for now to keep cleaner) */
+.credit-goal-bar-target { display: none; }
+
+/* ─── Tendencias card (chart + breakdown) ────────────────────────── */
+
+.credit-trend-chart {
+  margin-top: 6px;
+  padding: 4px 0;
+}
+
+.credit-breakdown-section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.credit-breakdown-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.credit-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.credit-breakdown-row-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  gap: 8px;
+}
+
+.credit-breakdown-row-amounts {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.credit-breakdown-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.credit-breakdown-bar-interest {
+  background: var(--accent-red, #dc2626);
+}
+
+.credit-breakdown-bar-principal {
+  background: var(--accent-green, #34d5b0);
+}
+
+.credit-breakdown-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(59, 130, 246, 0.06);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ─── Gastos del ciclo (lista categorías) ────────────────────────── */
+
+.credit-spending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.credit-spending-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.credit-spending-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.credit-spending-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-green), #0E9E7E);
+  border-radius: 999px;
+}
+
+/* ─── Payoff timeline ────────────────────────────────────────────── */
+
+.credit-timeline {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+}
+
+.credit-timeline-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.credit-timeline-head > span:first-child {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10.5px;
+}
+
+.credit-timeline-date {
+  color: var(--accent-green);
+  font-weight: 700;
+  text-transform: capitalize;
+  font-size: 13px;
+}
+
+.credit-timeline-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.credit-timeline-now,
+.credit-timeline-target {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.credit-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.credit-timeline-dot--green {
+  background: var(--accent-green);
+  box-shadow: 0 0 8px rgba(52, 213, 176, 0.4);
+}
+
+.credit-timeline-label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.credit-timeline-line {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-top: -14px;
+}
+
+.credit-timeline-progress {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--accent-green) 0%, var(--accent-amber) 60%, var(--accent-red) 100%);
+  opacity: 0.55;
+}
+
+.credit-timeline-meta {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* ─── FX drift alert ─────────────────────────────────────────────── */
+
+.credit-fx-alert {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid transparent;
+}
+
+.credit-fx-alert--bad {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+.credit-fx-alert--bad > svg {
+  color: var(--accent-red);
+}
+
+.credit-fx-alert--good {
+  background: rgba(22, 163, 74, 0.06);
+  border-color: rgba(22, 163, 74, 0.2);
+}
+
+.credit-fx-alert--good > svg {
+  color: var(--accent-green);
+}
+
+.credit-fx-alert-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.credit-fx-alert-text {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Footnote */
+.credit-footnote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 4px 12px;
+}
+
+/* Bloques plegados a la escala de tres tiers (480 / 768 / 1024).
+   Van al final del archivo a proposito: antes vivian en un breakpoint
+   mas estrecho y ganaban por ser mas especificos en anchura. Al
+   compartir tier, lo unico que decide es el orden. */
+@media (max-width: 768px) {
+  .credit-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .credit-payment-breakdown {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+@media (max-width: 768px) {
+  .credit-edit-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D5B0"/>
+      <stop offset="100%" stop-color="#0E9E7E"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+
+  <!-- J -->
+  <path
+    d="M 18 7 L 18 19 C 18 22.5 16 25 12.5 25 C 10 25 8 23.5 7 21.5 L 10 19.5 C 10.5 20.5 11.5 21 12.5 21 C 14 21 14.5 20 14.5 19 L 14.5 7 Z"
+    fill="#062019"
+  />
+
+  <!-- + dot accent -->
+  <circle cx="24" cy="9" r="3.5" fill="#062019"/>
+  <text
+    x="24" y="11"
+    font-family="system-ui, Arial, sans-serif"
+    font-size="5" font-weight="700"
+    fill="#34D5B0" text-anchor="middle"
+  >+</text>
+</svg>

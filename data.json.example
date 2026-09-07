@@ -1,0 +1,20 @@
+{
+  "transactions": [],
+  "accounts": [
+    {
+      "id": "default",
+      "name": "Cuenta Principal",
+      "balance": 0,
+      "color": "#4CAF50",
+      "icon": "\ud83d\udcb3"
+    }
+  ],
+  "budgets": [],
+  "currency": "PEN",
+  "user": null,
+  "users": [],
+  "goals": [],
+  "investments": [],
+  "recurring": [],
+  "autosave": []
+}

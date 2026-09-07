@@ -1,0 +1,217 @@
+/* Panel "Próximos 30 días"
+   ------------------------
+   Solo el layout: la lista tenía el overflow inline y sin clase. El estilo
+   de la barra en sí vive en tokens.css y aplica a toda la app. */
+.subs-upcoming-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 480px;
+  overflow-y: auto;
+  /* Sitio para la barra sin que las tarjetas queden pegadas al pulgar. */
+  padding-right: 6px;
+}
+
+/* En táctil la barra es efímera y el padding extra solo roba ancho. */
+@media (hover: none) {
+  .subs-upcoming-list {
+    padding-right: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Vista de Suscripciones
+   ----------------------
+   Estaba armada con estilos inline, que no admiten media queries: la rejilla
+   quedaba en "1fr 340px" tambien en el celular, asi que el panel de
+   "Próximos 30 días" se salia de la pantalla y la pagina scrolleaba de lado. */
+
+.subs-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.subsview-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.subs-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.subs-filters,
+.subs-toolbar-right {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Empuja el toggle y "Reanalizar" a la derecha en escritorio. */
+.subs-toolbar-right {
+  margin-left: auto;
+}
+
+.subs-viewtoggle {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.subs-redetect {
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  /* 44px, el minimo comodo para el pulgar. Antes eran 36 y, al ser una regla
+     mas especifica, le ganaba al minimo global de mobile-sheets.css. */
+  min-height: 44px;
+}
+
+.subs-upcoming-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  position: sticky;
+  top: 1rem;
+}
+
+/* El panel lateral necesita ~340px mas el contenido; por debajo de eso las
+   dos columnas se pisan aunque la pantalla no sea "de celular". */
+
+
+@media (max-width: 768px) {
+  /* El margin-left auto dejaba "Reanalizar" solo en su propia fila al
+     envolver. En pantalla angosta se ordena en filas completas. */
+  .subs-toolbar-right {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .subs-viewtoggle {
+    flex: 1;
+    justify-content: space-between;
+  }
+
+  /* Los chips de confianza pasan a una tira que se desliza, en vez de
+     apilarse en tres filas y empujar todo hacia abajo. */
+  .subs-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 2px;
+  }
+
+  .subs-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .subs-filters > button {
+    flex-shrink: 0;
+  }
+
+  .subs-upcoming-panel {
+    padding: 1rem;
+  }
+}
+
+/* Tarjetas KPI
+   ------------
+   El importe se partia en dos lineas ("S/" arriba y "3,544.80" abajo) porque
+   con dos columnas en un viewport de 375 le quedan ~75px utiles y a 1.15rem
+   necesita mas. Se ajusta el tamano con clamp segun el ancho disponible y se
+   prohibe el salto: es una cifra, partirla la vuelve ilegible. */
+.subsview-kpi {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  /* Sin esto el contenido interno impone el ancho y la rejilla desborda. */
+  min-width: 0;
+}
+
+.subsview-kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.subsview-kpi-text {
+  min-width: 0;
+}
+
+.subsview-kpi-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.subsview-kpi-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 768px) {
+  .subsview-kpi {
+    /* Menos aire lateral y un icono mas chico liberan ~20px para la cifra. */
+    padding: 0.85rem 0.9rem;
+    gap: 0.6rem;
+  }
+
+  .subsview-kpi-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* Escala con el ancho de la pantalla. El factor es 3.6vw y no 4.2 porque
+     medido a 420px --el caso justo, con dos columnas-- 4.2vw dejaba el texto
+     ocupando 93px en 93px disponibles: entraba por casualidad y cualquier
+     importe mas largo se volvia a partir. */
+  .subsview-kpi-value {
+    font-size: clamp(0.8rem, 3.6vw, 1.15rem);
+  }
+
+  .subsview-kpi-label {
+    font-size: var(--fs-micro);
+  }
+}
+
+/* Bloques plegados a la escala de tres tiers (480 / 768 / 1024).
+   Van al final del archivo a proposito: antes vivian en un breakpoint
+   mas estrecho y ganaban por ser mas especificos en anchura. Al
+   compartir tier, lo unico que decide es el orden. */
+@media (max-width: 1024px) {
+  .subs-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* Ya no es una columna al costado: pegarlo arriba solo tapa contenido. */
+  .subs-upcoming-panel {
+    position: static;
+  }
+}

@@ -1,0 +1,1809 @@
+/* Design system «Classical» — capa movil
+   =======================================
+   Tokens y primitivas del handoff `design_handoff_juntos_mobile_1c`.
+
+   Va acotado a `.is-mobile` a proposito: el handoff redefine solo la
+   experiencia movil y el escritorio conserva su paleta oscura. Redefinir los
+   tokens dentro del contenedor --y no en :root-- hace que todo lo que ya
+   consume var(--bg-card), var(--text-primary) y compania se reinterprete solo,
+   sin tocar cada regla.
+
+   Regla del sistema: el oro (#b68235) es trazo, regla o tinte suave. Nunca
+   relleno solido. */
+
+.is-mobile {
+  /* ── Tokens propios del sistema ─────────────────────────────────── */
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201f1d;
+  --color-divider: color-mix(in srgb, #201f1d 16%, transparent);
+
+  --color-accent: #b68235;
+  --color-accent-100: #fff3e4;
+  --color-accent-200: #ffe3bf;
+  --color-accent-300: #facb8d;
+  --color-accent-400: #e1ad66;
+  --color-accent-500: #c28d41;
+  --color-accent-600: #a06f24;
+  --color-accent-700: #7d5411;
+  --color-accent-800: #5a3b0a;
+  --color-accent-900: #3a270d;
+
+  --color-neutral-100: #f8f4f4;
+  --color-neutral-200: #eae7e7;
+  --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6;
+  --color-neutral-500: #9b9797;
+  --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d;
+  --color-neutral-800: #444141;
+  --color-neutral-900: #2d2b2b;
+
+  /* Dos familias, no tres. Cormorant es una display de contraste alto: por
+     debajo de ~19px sus trazos finos se rompen, asi que queda reservada para
+     cifras grandes y titulos. Todo lo pequenio --etiquetas, pestanas,
+     metadatos-- va en la sans que la app ya cargaba. Lora se retira. */
+  --font-heading: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Ocho roles y ni uno mas. Antes habia diecisiete tamanios distintos
+     escritos a mano en cada regla, con medios pixeles --12.5 contra 12,
+     13.5 contra 13-- que no crean jerarquia: solo desalinean las lineas
+     base de una columna con las de la de al lado.
+
+     El line-height va emparejado con cada tamanio porque `normal` depende de
+     la metrica de la familia: Cormorant y DM Sans espacian distinto con el
+     mismo valor, y en parrafo `normal` cae cerca de 1.2, demasiado apretado
+     para leer.
+
+     Sin clamp ni vw: antes solo la cifra heroe era fluida, asi que al
+     cambiar el ancho crecia ella sola y la jerarquia se descuadraba. Y el
+     clamp devolvia decimales (42.9px a 390px), justo lo que esta escala
+     quiere quitar. */
+  --cl-fs-display-l: 40px;  --cl-lh-display-l: 1.05;
+  --cl-fs-display-m: 28px;  --cl-lh-display-m: 1.1;
+  --cl-fs-title:     24px;  --cl-lh-title:     1.15;
+  --cl-fs-body:      15px;  --cl-lh-body:      1.5;
+  --cl-fs-label:     14px;  --cl-lh-label:     1.4;
+  --cl-fs-meta:      13px;  --cl-lh-meta:      1.4;
+  --cl-fs-kicker:    12px;  --cl-lh-kicker:    1.2;
+  --cl-fs-nav:       11px;  --cl-lh-nav:       1.2;
+
+  /* Las tres display llevan el mismo apretado: a ese cuerpo Cormorant abre
+     demasiado por defecto. */
+  --cl-tracking-display: -0.01em;
+
+  /* La alerta necesita su propio color: con el ocre de marca --el mismo de
+     las etiquetas-- se leia como decoracion, no como aviso. */
+  --cl-alert: #a02a37;
+
+  --space-1: 4.6px;
+  --space-2: 9.2px;
+  --space-3: 13.8px;
+  --space-4: 18.4px;
+  --space-6: 27.6px;
+  --space-8: 36.8px;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 7px;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+
+  /* Padding lateral de pantalla, del handoff. */
+  --screen-pad: 20px;
+
+  /* ── Reasignacion de los tokens que ya usa la app ───────────────────
+     La app tiene cientos de reglas apuntando a estos nombres. Mapearlos
+     aqui convierte toda la interfaz de una vez, en vez de reescribirlas. */
+  --bg-primary: var(--color-bg);
+  --bg-secondary: var(--color-bg);
+  --bg-card: var(--color-bg);
+  --bg-elevated: var(--color-neutral-100);
+  --bg-hover: var(--color-accent-100);
+
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-neutral-800);
+  --text-muted: var(--color-neutral-700);
+
+  --border: var(--color-divider);
+  --border-color: var(--color-divider);
+
+  --accent-green: var(--color-accent-700);
+  --accent-blue: var(--color-accent-700);
+  --accent-primary: var(--color-accent);
+
+  /* Superficies. La app declara varias familias de fondo --generales y las
+     propias de metas, recurrentes y transacciones-- y dejar una sola fuera
+     basta para que esa pantalla siga oscura: .mobile-shell usa --bg-base y
+     tapaba todo lo demas. Se remapean todas, no una seleccion. */
+  --bg-base: var(--color-bg);
+  --bg-surface: var(--color-bg);
+  --bg-tertiary: var(--color-neutral-100);
+  --goal-bg-base: var(--color-bg);
+  --goal-bg-card: var(--color-bg);
+  --goal-bg-panel: var(--color-neutral-100);
+  --rec-bg-base: var(--color-bg);
+  --rec-bg-card: var(--color-bg);
+  --rec-bg-panel: var(--color-neutral-100);
+  --txn-bg-base: var(--color-bg);
+  --txn-bg-card: var(--color-bg);
+  --txn-bg-panel: var(--color-neutral-100);
+
+  /* Texto */
+  --text-inverse: var(--color-bg);
+  --text-primary-legacy: var(--color-text);
+  --goal-text-primary: var(--color-text);
+  --goal-text-secondary: var(--color-neutral-800);
+  --goal-text-muted: var(--color-neutral-700);
+  --rec-text-primary: var(--color-text);
+  --rec-text-secondary: var(--color-neutral-800);
+  --rec-text-muted: var(--color-neutral-700);
+  --txn-text-primary: var(--color-text);
+  --txn-text-secondary: var(--color-neutral-800);
+  --txn-text-muted: var(--color-neutral-700);
+
+  /* Bordes */
+  --border-hover: var(--color-neutral-400);
+  --border-active: var(--color-accent);
+  --goal-border: var(--color-divider);
+  --rec-border: var(--color-divider);
+  --txn-border: var(--color-divider);
+
+  /* Semanticos. Los originales estan afinados para fondo oscuro: el turquesa
+     y el rosa sobre crema dan menos de 4.5:1. Se sustituyen por versiones
+     oscuras del mismo significado; los tintes de fondo se mantienen suaves. */
+  --success: #1a6b52;
+  --success-bg: rgba(26, 107, 82, 0.1);
+  --success-border: rgba(26, 107, 82, 0.25);
+  --danger: #a02a37;
+  --danger-bg: rgba(160, 42, 55, 0.1);
+  --danger-border: rgba(160, 42, 55, 0.25);
+  --warning: var(--color-accent-700);
+  --warning-bg: var(--color-accent-100);
+  --warning-border: rgba(182, 130, 53, 0.3);
+  --info: var(--color-accent-700);
+  --info-bg: var(--color-accent-100);
+  --info-border: rgba(182, 130, 53, 0.3);
+  --rec-danger: #a02a37;
+  --rec-success: #1a6b52;
+  --rec-info: var(--color-accent-700);
+  --rec-badge-bg: var(--color-accent-100);
+  --rec-badge-text: var(--color-accent-700);
+  --rec-increase-bg: rgba(160, 42, 55, 0.1);
+  --rec-increase-text: #a02a37;
+  --goal-danger: #a02a37;
+  --goal-success: #1a6b52;
+  --goal-warning: var(--color-accent-700);
+  --goal-info: var(--color-accent-700);
+  --txn-danger: #a02a37;
+  --txn-success: #1a6b52;
+  --txn-info: var(--color-accent-700);
+
+  --font-family: var(--font-body);
+
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+/* ── Primitivas tipograficas ──────────────────────────────────────── */
+
+/* Cifras y titulos van en la serif del sistema. Las cifras SIEMPRE en
+   tabular: sin eso una columna de montos baila al cambiar de digito. */
+/* lining ademas de tabular: las figuras old-style de Cormorant hacen que el
+   9 baje de la linea base. Queda bonito en un libro y mal para escanear
+   dinero en una columna. */
+.is-mobile .cl-num {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Cormorant nunca por debajo de 24px. Es una display de contraste alto: a
+   cuerpos pequenios los trazos finos se rompen, y estaba llegando hasta los
+   12.5px --los montos de Fijos-- que es justo donde mas falta hace leer sin
+   esfuerzo. Debajo de 24, siempre DM Sans.
+
+   Solo hay dos puertas a la serif, .cl-title y .cl-amount, y ninguna por
+   debajo de ese piso. Antes habia una tercera, .cl-display, que solo ponia la
+   familia y dejaba el tamanio a quien la usara: asi es como se llega a cinco
+   recetas distintas para un monto. */
+.is-mobile .cl-title {
+  font-family: var(--font-heading);
+  font-size: var(--cl-fs-title);
+  line-height: var(--cl-lh-title);
+  letter-spacing: var(--cl-tracking-display);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Un monto tenia cinco recetas segun donde cayera: Cormorant 42.9/400 en el
+   heroe, Cormorant 28/400 en el total de Fijos, DM Sans 16/600 en el
+   gastado, DM Sans 14/600 en las filas y Cormorant 12.5/600 en los montos
+   secundarios. No existia un componente de cifra: cada pantalla improviso el
+   suyo. Este es el unico, y viene en tres tamanios. */
+.is-mobile .cl-amount {
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-label);
+  line-height: var(--cl-lh-label);
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: lining-nums tabular-nums;
+  /* Un monto partido en dos lineas deja de ser una cifra. */
+  white-space: nowrap;
+}
+
+.is-mobile .cl-amount.is-m {
+  font-family: var(--font-heading);
+  font-size: var(--cl-fs-display-m);
+  line-height: var(--cl-lh-display-m);
+  letter-spacing: var(--cl-tracking-display);
+  font-weight: 400;
+}
+
+.is-mobile .cl-amount.is-l {
+  font-family: var(--font-heading);
+  font-size: var(--cl-fs-display-l);
+  line-height: var(--cl-lh-display-l);
+  letter-spacing: var(--cl-tracking-display);
+  font-weight: 400;
+}
+
+/* Kicker: la etiqueta pequena en versalitas doradas que encabeza cada
+   bloque. Es el recurso que le da el aire editorial al sistema. */
+.is-mobile .cl-kicker {
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-kicker);
+  line-height: var(--cl-lh-kicker);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-accent-700);
+  font-weight: 600;
+}
+
+.is-mobile .cl-meta {
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  color: var(--color-neutral-800);
+}
+
+/* Parrafo. El unico rol pensado para leer varias lineas seguidas. */
+.is-mobile .cl-body {
+  font-size: var(--cl-fs-body);
+  line-height: var(--cl-lh-body);
+  color: var(--color-neutral-900);
+}
+
+/* ── Superficies ──────────────────────────────────────────────────── */
+
+/* Las tarjetas del sistema son borde, no relleno: el fondo se mantiene y
+   la jerarquia la da la linea. */
+.is-mobile .cl-card {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  padding: 14px 15px;
+  background: transparent;
+}
+
+/* Regla fuerte: separa secciones, a diferencia de las hairlines de 1px que
+   separan filas. */
+.is-mobile .cl-rule-strong {
+  border-bottom: 2px solid var(--color-text);
+}
+
+.is-mobile .cl-rule {
+  border-bottom: 1px solid var(--color-divider);
+}
+
+/* ── Controles ────────────────────────────────────────────────────── */
+
+.is-mobile .cl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-accent-700);
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-label);
+  line-height: var(--cl-lh-label);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.is-mobile .cl-btn:hover:not(:disabled),
+.is-mobile .cl-btn:active:not(:disabled) {
+  background: var(--color-accent-100);
+}
+
+/* El sistema pide opacidad, no un gris plano: el boton deshabilitado sigue
+   siendo el mismo objeto, solo atenuado. */
+.is-mobile .cl-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Segmented control: 3 columnas iguales con divisores de 1px. */
+.is-mobile .cl-segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.is-mobile .cl-segmented > button {
+  min-height: 44px;
+  padding: 9px 4px;
+  border: 0;
+  border-left: 1px solid var(--color-divider);
+  background: transparent;
+  color: var(--color-neutral-800);
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-label);
+  line-height: var(--cl-lh-label);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.is-mobile .cl-segmented > button:first-child {
+  border-left: 0;
+}
+
+.is-mobile .cl-segmented > button[aria-selected='true'] {
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+}
+
+/* Chip / pill de filtro. */
+.is-mobile .cl-chip {
+  flex-shrink: 0;
+  min-height: 34px;
+  padding: 6px 13px;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-neutral-800);
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.is-mobile .cl-chip[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+}
+
+.is-mobile .cl-chip-dashed {
+  border-style: dashed;
+}
+
+/* Tira de chips que se desliza, sin barra visible. */
+.is-mobile .cl-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.is-mobile .cl-chips::-webkit-scrollbar {
+  height: 0;
+}
+
+/* Boton cuadrado de icono del topbar (ojo, buscar). */
+.is-mobile .cl-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px de verdad, no 30 con un pseudo-elemento encima: el area invisible
+     confunde al depurar y no la ve ningun auditor automatico. */
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  position: relative;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-neutral-800);
+  cursor: pointer;
+}
+
+.is-mobile .cl-icon-btn[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  color: var(--color-accent-700);
+}
+
+/* Foco visible del sistema. */
+.is-mobile .cl-btn:focus-visible,
+.is-mobile .cl-chip:focus-visible,
+.is-mobile .cl-icon-btn:focus-visible,
+.is-mobile .cl-segmented > button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Listas ───────────────────────────────────────────────────────── */
+
+.is-mobile .cl-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* 44px de alto real para la fila, aunque el texto ocupe menos. */
+  min-height: 44px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.is-mobile .cl-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.is-mobile .cl-row-name {
+  font-size: var(--cl-fs-label);
+  line-height: var(--cl-lh-label);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 15px es territorio de la sans: la serif a ese tamanio pierde definicion en
+   los decimales, que es justo lo que hay que poder leer. */
+/* ── Barra inferior y FAB ─────────────────────────────────────────── */
+
+.is-mobile .cl-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: grid;
+  /* Cuatro columnas iguales: tres destinos y la accion de registrar. Ya se
+     probo con el boton flotando --centrado sobre la barra y abajo a la
+     derecha-- y en los dos casos tapaba filas tocables de la lista. */
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+  position: fixed;
+  /* Opaco a proposito: translucido sobre una lista deja leer numeros
+     fantasma detras de las etiquetas. */
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-divider);
+  padding: 10px 10px calc(22px + env(safe-area-inset-bottom, 0px));
+}
+
+.is-mobile .cl-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--color-neutral-700);
+  cursor: pointer;
+}
+
+.is-mobile .cl-tab.active {
+  color: var(--color-accent-700);
+}
+
+.is-mobile .cl-tab-label {
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-nav);
+  line-height: var(--cl-lh-nav);
+}
+
+/* Flota completamente por encima de la barra. Al centrarlo cae justo sobre
+   la pestania del medio: si lo dejo a caballo del borde, tapa su icono. */
+/* La accion se distingue del resto por el ocre y por el recuadro del icono,
+   no por flotar. Mismo alto y misma rejilla que las pestanias, para que la
+   barra siga leyendose como una sola fila. */
+.is-mobile .cl-tab-accion {
+  color: var(--color-accent-700);
+  /* Sin esto, mantener pulsado en Android abre el menu de seleccion del
+     sistema y se pierde la pulsacion larga. */
+  -webkit-touch-callout: none;
+}
+
+.is-mobile .cl-tab-accion-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 20px de alto, el mismo que el icono de las otras pestanias: si la caja
+     fuera mas alta, esta columna crece y su etiqueta baja respecto a las
+     demas. El recuadro se ensancha a los lados, que no afecta a la fila. */
+  width: 32px;
+  height: 20px;
+  border: 1px solid var(--color-accent);
+  border-radius: 999px;
+}
+
+.is-mobile .cl-tab-accion .cl-tab-label {
+  font-weight: 600;
+}
+
+.is-mobile .cl-tab-accion:active .cl-tab-accion-icono {
+  background: var(--color-accent-100);
+}
+
+.is-mobile .cl-fab-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(32, 31, 29, 0.28);
+  display: flex;
+  align-items: flex-end;
+}
+
+.is-mobile .cl-fab-menu {
+  position: relative;
+  width: 100%;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-neutral-400);
+  border-radius: 16px 16px 0 0;
+  box-shadow: var(--shadow-lg);
+  padding: 16px 20px calc(22px + env(safe-area-inset-bottom, 0px));
+  animation: sheetUp 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.is-mobile .cl-fab-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-label);
+  line-height: var(--cl-lh-label);
+  text-align: left;
+  cursor: pointer;
+}
+
+.is-mobile .cl-fab-menu-item:last-of-type {
+  border-bottom: 0;
+}
+
+.is-mobile .cl-fab-menu-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-neutral-800);
+  cursor: pointer;
+}
+
+/* ── Contenedor de pantalla ───────────────────────────────────────── */
+
+.is-mobile .cl-screen {
+  padding: 0 var(--screen-pad);
+  /* Sitio para la barra fija MAS el FAB que ahora flota sobre ella: sin esto
+     la ultima fila queda debajo de uno o del otro. */
+  padding-bottom: calc(152px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── Ajustes ──────────────────────────────────────────────────────── */
+
+.is-mobile .cl-settings-group {
+  margin-top: 22px;
+}
+
+/* El kicker es el MISMO en las cuatro pantallas. Antes en Inicio iba sin
+   filete y en Ajustes con uno, con identico tamanio, color y tracking: por eso
+   «las secciones» no se sentian iguales al moverte. Sin filete, como en Inicio;
+   el espacio separa, que va mejor con lo editorial. */
+.is-mobile .cl-settings-group .cl-kicker {
+  display: block;
+  padding-bottom: 10px;
+}
+
+.is-mobile .cl-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 13px 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-label);
+  line-height: var(--cl-lh-label);
+  text-align: left;
+  cursor: pointer;
+}
+
+.is-mobile .cl-settings-label {
+  flex: 1;
+}
+
+.is-mobile .cl-settings-chevron {
+  color: var(--color-neutral-700);
+  flex-shrink: 0;
+}
+
+.is-mobile .cl-settings-account {
+  padding: 10px 0;
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  color: var(--color-neutral-800);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+/* ── Inicio movil ─────────────────────────────────────────────────── */
+
+.is-mobile .cl-home-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0 0;
+}
+
+.is-mobile .cl-home-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.is-mobile .cl-home-date {
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  color: var(--color-neutral-700);
+  white-space: nowrap;
+}
+
+.is-mobile .cl-home-segmented {
+  margin: 14px 0 0;
+}
+
+.is-mobile .cl-section-kicker {
+  display: block;
+  margin: 22px 0 8px;
+}
+
+/* Cabecera de seccion con la regla fuerte debajo. */
+.is-mobile .cl-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-bottom: 10px;
+}
+
+/* KPIs */
+/* Grafico de barras */
+.is-mobile .cl-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 72px;
+  /* La linea base ancla las barras: sin ella flotan. */
+  border-bottom: 1px solid var(--color-text);
+}
+
+.is-mobile .cl-chart-bar {
+  flex: 1;
+  background: var(--color-accent-400);
+  /* Minimo visible para que un dia sin gasto no desaparezca del eje. */
+  min-height: 3px;
+}
+
+.is-mobile .cl-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: var(--cl-fs-nav);
+  line-height: var(--cl-lh-nav);
+  color: var(--color-neutral-700);
+}
+
+/* Tarjeta de cierre con el dato accionable */
+.is-mobile .cl-insight {
+  margin-top: 20px;
+  padding: 14px 16px;
+}
+
+.is-mobile .cl-insight-text {
+  margin: 0 0 12px;
+  font-size: var(--cl-fs-body);
+  line-height: var(--cl-lh-body);
+  color: var(--color-accent-900);
+}
+
+/* Iba en Cormorant, y como hereda el cuerpo del parrafo caia a 12.5px: los
+   montos de Fijos --«S/ 295.40», «S/ 3,544.80»-- en una display de contraste
+   alto y a cuerpo de metadato. El enfasis lo da el peso, no la familia. */
+.is-mobile .cl-insight-text strong {
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Nosotros */
+.is-mobile .cl-persons {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.is-mobile .cl-person {
+  flex: 1;
+  min-width: 0;
+}
+
+.is-mobile .cl-person-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent-700);
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  margin-bottom: 8px;
+}
+
+.is-mobile .cl-person-name {
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  color: var(--color-neutral-800);
+}
+
+.is-mobile .cl-person-amount {
+  margin-top: 2px;
+}
+
+/* Estado vacio: el borde punteado dice «esto todavia no esta», sin
+   necesidad de explicarlo. */
+.is-mobile .cl-empty {
+  margin-top: 18px;
+  padding: 20px 18px;
+  border: 1px dashed var(--color-neutral-400);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.is-mobile .cl-empty-title {
+  font-size: var(--cl-fs-title);
+  line-height: var(--cl-lh-title);
+  margin: 0 0 8px;
+}
+
+.is-mobile .cl-empty-body {
+  margin: 0 0 14px;
+  font-size: var(--cl-fs-body);
+  line-height: var(--cl-lh-body);
+  color: var(--color-neutral-800);
+}
+
+/* Vista previa atenuada: es una promesa de como se vera, no un dato. */
+.is-mobile .cl-preview {
+  opacity: 0.6;
+}
+
+.is-mobile .cl-preview-initial {
+  width: 16px;
+  flex-shrink: 0;
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  color: var(--color-accent-700);
+}
+
+/* ── Movimientos ──────────────────────────────────────────────────── */
+
+.is-mobile .cl-mov-subtitle {
+  margin-top: 6px;
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  color: var(--color-neutral-800);
+}
+
+.is-mobile .cl-mov-chips {
+  margin: 14px 0 4px;
+  /* Los chips salen del padding lateral para que el primero y el ultimo
+     queden a ras del borde al deslizar, en vez de cortados a media pastilla. */
+  margin-left: calc(var(--screen-pad) * -1);
+  margin-right: calc(var(--screen-pad) * -1);
+  padding: 0 var(--screen-pad);
+}
+
+.is-mobile .cl-search {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  /* La unica excepcion a la escala, y a proposito: por debajo de 16px iOS
+     hace zoom al enfocar un input y deja la pantalla desencuadrada. */
+  font-size: 16px;
+  line-height: var(--cl-lh-body);
+}
+
+.is-mobile .cl-search:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.is-mobile .cl-mov-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+/* El glifo pesa como un dato secundario: mismo gris que la categoria que
+   acompania. Si fuera negro competiria con el nombre del movimiento, que es
+   lo que de verdad se lee. */
+.is-mobile .cl-mov-glyph {
+  flex-shrink: 0;
+  color: var(--color-neutral-700);
+}
+
+.is-mobile .cl-mov-date {
+  width: 40px;
+  flex-shrink: 0;
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  color: var(--color-neutral-700);
+}
+
+/* ── Hoja de nuevo gasto ──────────────────────────────────────────── */
+
+.is-mobile .cl-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(32, 31, 29, 0.28);
+  animation: clFade 0.16s ease;
+}
+
+.is-mobile .cl-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-height: 88%;
+  overflow-y: auto;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-neutral-400);
+  border-radius: 16px 16px 0 0;
+  box-shadow: var(--shadow-lg);
+  padding: 12px 20px calc(22px + env(safe-area-inset-bottom, 0px));
+  animation: sheetUp 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes clFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-mobile .cl-sheet,
+  .is-mobile .cl-sheet-backdrop {
+    animation: none;
+  }
+}
+
+.is-mobile .cl-sheet-grab {
+  width: 38px;
+  height: 3px;
+  margin: 0 auto;
+  border-radius: 2px;
+  background: var(--color-neutral-400);
+}
+
+.is-mobile .cl-sheet-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.is-mobile .cl-sheet-date {
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  color: var(--color-neutral-800);
+}
+
+/* El monto es lo unico grande de la hoja: es el dato que se esta capturando. */
+.is-mobile .cl-sheet .cl-amount {
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-divider);
+  /* neutral-700 y no un gris mas claro: el placeholder tambien tiene que
+     cumplir 4.5:1. */
+  color: var(--color-neutral-700);
+}
+
+.is-mobile .cl-amount.filled {
+  color: var(--color-text);
+}
+
+/* Teclado: los huecos de 1px dejan ver el fondo y hacen de lineas. */
+.is-mobile .cl-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--color-divider);
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.is-mobile .cl-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 11px de padding sobre la linea base da mas de 44px reales por tecla. */
+  min-height: 48px;
+  padding: 11px 0;
+  border: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  /* Las teclas son controles, no titulos: aunque 24px ya permita la serif,
+     una cifra que se pulsa se lee mejor en la sans. */
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-title);
+  line-height: var(--cl-lh-title);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+  cursor: pointer;
+}
+
+.is-mobile .cl-key:active {
+  background: var(--color-accent-100);
+}
+
+/* ── Topbar de las vistas que aun no tienen cabecera propia ───────── */
+
+/* Estaba con rgba(13,18,26,.92) escrito a mano, no via token, asi que el
+   rediseno no lo alcanzaba: quedaba una franja negra sobre el fondo claro y
+   el titulo --que si usa token-- salia texto oscuro sobre oscuro. */
+.is-mobile .mobile-topbar {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-divider);
+  backdrop-filter: none;
+}
+
+.is-mobile .mobile-topbar-title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: var(--cl-fs-title);
+  line-height: var(--cl-lh-title);
+  color: var(--color-text);
+}
+
+/* El avatar era un degradado azul de Microsoft: el unico color de la app que
+   no pertenece al sistema. Pasa a trazo dorado, como el resto. */
+.is-mobile .mobile-topbar-avatar {
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent-700);
+  font-weight: 600;
+}
+
+.is-mobile .mobile-topbar-logo {
+  /* El emoji del logo compite con la cabecera y no aporta: en las vistas
+     internas basta el titulo. */
+  display: none;
+}
+
+/* ── Accesos contextuales al final de cada seccion de Inicio ─────── */
+
+.is-mobile .cl-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.is-mobile .cl-jump > button {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-label);
+  line-height: var(--cl-lh-label);
+  cursor: pointer;
+}
+
+.is-mobile .cl-jump > button:active {
+  background: var(--color-accent-100);
+}
+
+
+/* ── Cabecera de pagina ───────────────────────────────────────────── */
+
+/* Sustituye al topbar oscuro. Mismo tratamiento que la cabecera de Inicio,
+   sin barra de color ni avatar: el titulo ya es la referencia. */
+.is-mobile .cl-page-header {
+  padding: 8px var(--screen-pad) 0;
+}
+
+.is-mobile .cl-page-header .cl-title {
+  margin: 0;
+  font-size: var(--cl-fs-title);
+  line-height: var(--cl-lh-title);
+}
+
+/* ── Fondo de la pagina ───────────────────────────────────────────── */
+
+/* body queda POR ENCIMA de .is-mobile, asi que no le llegaba el remapeo de
+   tokens y seguia resolviendo --bg-primary desde :root: quedaban bandas
+   oscuras en los bordes y detras del rebote del scroll. */
+@media (max-width: 768px) {
+  /* "html body" y no "body" a secas: la regla base vive en App.css DESPUES
+     de los @import, asi que a igual especificidad gana por orden. Ya paso lo
+     mismo con los modales. */
+  html body {
+    background: #f3f2f2;
+  }
+}
+
+/* ── Cifra protagonista de Inicio ─────────────────────────────────── */
+
+.is-mobile .cl-hero {
+  margin-top: 16px;
+  padding: 16px 0 14px;
+  border-bottom: 2px solid var(--color-text);
+}
+
+.is-mobile .cl-hero-value {
+  margin: 6px 0 6px;
+}
+
+/* Sin margen, la cifra deja de ser neutra y lo dice con color. */
+.is-mobile .cl-hero.alerta .cl-hero-value {
+  color: var(--cl-alert);
+}
+
+.is-mobile .cl-hero.alerta {
+  border-bottom-color: var(--cl-alert);
+}
+
+/* Gastado: contexto en una linea, no una tarjeta que compita. */
+.is-mobile .cl-subline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.is-mobile .cl-alerta {
+  color: var(--cl-alert);
+}
+
+/* ── Movimientos: encabezado de dia y desvanecido de los chips ────── */
+
+.is-mobile .cl-mov-day {
+  margin: 18px 0 2px;
+  font-size: var(--cl-fs-kicker);
+  line-height: var(--cl-lh-kicker);
+  font-weight: 600;
+  color: var(--color-accent-700);
+  text-transform: capitalize;
+}
+
+/* La tira de chips se cortaba en seco contra el borde y no se veia que
+   hubiera mas. El degradado lo insinua sin ocupar sitio. */
+.is-mobile .cl-chips[data-fade='true'] {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
+}
+
+/* ── Vistas internas al sistema ───────────────────────────────────── */
+
+/* Suscripciones. Los KPI eran cuatro tarjetas de igual peso en 2x2, con
+   iconos de cinco colores distintos; a esa densidad ninguna cifra destaca. */
+.is-mobile .subsview-kpis {
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Las cajas de importe ocupan la fila entera. Ver el comentario en
+   SubscriptionsView: a dos columnas una cifra de moneda no cabe a 320px. */
+.is-mobile .subsview-kpi-ancho {
+  grid-column: 1 / -1;
+}
+
+.is-mobile .subsview-kpi {
+  padding: 12px 13px;
+  border-radius: var(--radius-md);
+  background: transparent;
+}
+
+/* El icono no aporta informacion que la etiqueta no de ya, y a color compite
+   con la cifra. Fuera en movil. */
+.is-mobile .subsview-kpi-icon {
+  display: none;
+}
+
+/* El selector Lista / Calendario / Linea de tiempo usa el segmented del
+   sistema; antes eran tres botones con sombra flotando en una caja. */
+.is-mobile .subs-viewtoggle {
+  padding: 0;
+  background: transparent;
+  width: 100%;
+}
+
+.is-mobile .subs-viewtoggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 9px 4px;
+  border: 0;
+  border-left: 1px solid var(--color-divider);
+  background: transparent;
+  color: var(--color-neutral-800);
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-label);
+  line-height: var(--cl-lh-label);
+  cursor: pointer;
+}
+
+.is-mobile .subs-viewtoggle-btn:first-child {
+  border-left: 0;
+}
+
+.is-mobile .subs-viewtoggle-btn[aria-selected='true'] {
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+}
+
+/* Tarjeta de suscripcion: las tres metricas eran cajas rellenas centradas.
+   Como filas etiqueta/valor ocupan la mitad y se leen de un vistazo. */
+.is-mobile .sub-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.is-mobile .sub-stat-label {
+  flex-shrink: 0;
+}
+
+.is-mobile .sub-stat-value {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-label);
+  line-height: var(--cl-lh-label);
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--color-text);
+}
+
+.is-mobile .sub-stat-value.warn,
+.is-mobile .sub-stat-sub.warn {
+  color: var(--cl-alert);
+}
+
+.is-mobile .sub-stat-sub {
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  color: var(--color-neutral-700);
+}
+
+/* Acciones: un solo trazo para todas. Antes cada una traia su color de fondo
+   y de borde por prop, con cinco tintes distintos en la misma tarjeta. */
+.is-mobile .sub-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-neutral-800);
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-meta);
+  cursor: pointer;
+}
+
+.is-mobile .sub-action:active {
+  background: var(--color-accent-100);
+}
+
+/* ── Grafico de ritmo ─────────────────────────────────────────────── */
+
+.is-mobile .cl-trend {
+  display: block;
+  width: 100%;
+  height: 76px;
+  overflow: visible;
+  border-bottom: 1px solid var(--color-text);
+}
+
+/* La diagonal es el gasto parejo: la referencia contra la que se lee todo. */
+.is-mobile .cl-trend-ref {
+  stroke: var(--color-neutral-400);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  fill: none;
+}
+
+/* La marca de hoy no compite con las dos series: es una guia, del gris de los
+   metadatos y de 1px. */
+.is-mobile .cl-trend-hoy {
+  stroke: var(--color-neutral-400);
+  stroke-width: 1;
+}
+
+.is-mobile .cl-trend-real {
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* ── Correcciones de la segunda auditoria ─────────────────────────── */
+
+/* Grafico: linea base visible y leyenda. */
+.is-mobile .cl-trend {
+  border-bottom: 0;
+}
+
+.is-mobile .cl-trend-base {
+  stroke: var(--color-text);
+  stroke-width: 1;
+}
+
+.is-mobile .cl-trend-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: var(--cl-fs-meta);
+  color: var(--color-neutral-800);
+}
+
+.is-mobile .cl-trend-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.is-mobile .cl-swatch {
+  width: 14px;
+  height: 0;
+  border-top: 2px solid var(--color-accent);
+}
+
+.is-mobile .cl-swatch.ref {
+  border-top: 1px dashed var(--color-neutral-400);
+}
+
+.is-mobile .cl-swatch.hoy {
+  width: 0;
+  height: 12px;
+  border-top: 0;
+  border-left: 1px solid var(--color-neutral-400);
+}
+
+/* «1 de septiembre», no «1 De Septiembre»: en espaniol los meses van en
+   minuscula. La mayuscula inicial se pone en el texto, no con CSS. */
+.is-mobile .cl-mov-day {
+  text-transform: none;
+}
+
+/* Boton fantasma: 0x0, invisible, pero seguia recibiendo el foco al tabular. */
+.is-mobile .import-export-btn {
+  display: none;
+}
+
+/* Los filetes de seccion de Ajustes eran 2px oscuros: demasiado peso para un
+   fondo tan claro y para lo que separan. */
+/* La fila del correo no es pulsable y no debe parecerlo. */
+.is-mobile .cl-settings-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.is-mobile .cl-settings-account-label {
+  flex-shrink: 0;
+  color: var(--color-neutral-700);
+}
+
+/* Un solo tratamiento de boton de icono en toda la app: el ojo de Inicio era
+   plano y el buscador de Movimientos un cuadrado con borde. */
+.is-mobile .cl-icon-btn {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+}
+
+/* El indice dice de que seccion cuelga cada destino: sin eso seria otro menu
+   plano y se perderia la relacion que motivo moverlos. */
+.is-mobile .cl-settings-where {
+  flex-shrink: 0;
+  font-size: var(--cl-fs-meta);
+  color: var(--color-neutral-700);
+}
+
+/* ── Vistas por clases al sistema ─────────────────────────────────── */
+
+/* Metas, Presupuestos, Credito y Recap ya heredan los colores del remapeo de
+   tokens, pero conservan la densidad y la tipografia de la etapa oscura:
+   tarjetas rellenas con sombra, cifras en la sans a tamanios sueltos y
+   etiquetas sin el tratamiento de kicker.
+
+   Se ajustan por clase --son vistas basadas en CSS, no en estilos inline-- y
+   solo en movil: el escritorio se queda como esta. */
+
+/* Tarjetas: el sistema usa el borde, no el relleno ni la sombra. */
+.is-mobile .gl-card,
+.is-mobile .recap-kpi,
+.is-mobile .credit-card-item,
+.is-mobile .credit-advice,
+.is-mobile .budget-item,
+.is-mobile .stat-card,
+.is-mobile .chart-card {
+  background: transparent;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+/* Las cifras grandes: serif del sistema, siempre tabular y lining. */
+.is-mobile .gl-card-current,
+.is-mobile .recap-kpi-value,
+.is-mobile .credit-kpi-value,
+.is-mobile .budget-bar-amounts,
+.is-mobile .kpi-value {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Etiquetas al tratamiento de kicker: versalitas doradas, mismo piso de
+   12px que el resto de la app. */
+.is-mobile .recap-kpi-label,
+.is-mobile .credit-kpi-label,
+.is-mobile .gl-summary-label,
+.is-mobile .budget-bar-category,
+.is-mobile .kpi-label {
+  font-size: var(--cl-fs-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent-700);
+}
+
+/* Las barras de progreso pierden el degradado y el brillo: en el sistema una
+   barra es una superficie plana con su tinte. */
+.is-mobile .budget-bar-fill,
+.is-mobile .gl-card-progress-fill {
+  background: var(--color-accent-400);
+  box-shadow: none;
+}
+
+.is-mobile .budget-bar-track,
+.is-mobile .gl-card-progress {
+  background: var(--color-neutral-200);
+}
+
+/* Las tarjetas de consejo de Credito venian con cuatro fondos de color segun
+   severidad. En una interfaz clara eso son cuatro rectangulos tenidos que
+   compiten entre si; el estado lo lleva el borde izquierdo. */
+.is-mobile .credit-advice {
+  background: transparent;
+  border-left: 3px solid var(--color-accent);
+}
+
+.is-mobile .credit-advice--danger {
+  border-left-color: var(--cl-alert);
+}
+
+.is-mobile .credit-advice--success {
+  border-left-color: var(--success);
+}
+
+/* Recap: el titulo es de los pocos sitios donde la serif tiene tamanio para
+   lucir sin romperse. */
+/* Recap es la unica vista interna que conserva su titulo: lleva el anio, y el
+   anio lo elige la propia vista. Se le da el sitio y el aire de la cabecera
+   del sistema para que no se note el cambio de una pantalla a otra. */
+.is-mobile .recap-title {
+  font-family: var(--font-heading);
+  font-size: var(--cl-fs-title);
+  line-height: var(--cl-lh-title);
+  letter-spacing: var(--cl-tracking-display);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.is-mobile .recap-subtitle {
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  color: var(--color-neutral-800);
+}
+
+/* En una columna de 390px el titulo y los controles no caben en la misma
+   fila: apilados, el selector de anio queda debajo del subtitulo en vez de
+   apretarse contra el borde. */
+.is-mobile .recap-head {
+  display: block;
+}
+
+.is-mobile .recap-head-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Escala de iconos en multiplos de 4: 16 en fila, 20 en las pestanias, 24 en
+   el FAB. Antes eran 15, 17 y 22: tres medidas sin relacion entre si. */
+.is-mobile .cl-settings-chevron,
+.is-mobile .cl-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Correcciones visuales de la tercera revision ─────────────────── */
+
+/* Las tres metricas venian en una rejilla de 3 columnas inline. Al pasarlas a
+   filas etiqueta/valor quedaron tres filas apretadas en columnas de 100px, y
+   la etiqueta se montaba encima del importe. Una sola columna. */
+.is-mobile .sub-stats {
+  display: block;
+}
+
+/* Los botones del sistema son trazo, nunca relleno solido: en la app venian
+   con fondo de acento, que aqui es el oro, y quedaban bloques marrones. */
+.is-mobile .btn-primary {
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent-700);
+  border-radius: var(--radius-md);
+  min-height: 44px;
+  /* Sin este aire el texto queda pegado al trazo: el relleno solido lo
+     disimulaba, el borde lo delata. */
+  padding: 10px 18px;
+}
+
+.is-mobile .btn-primary:hover,
+.is-mobile .btn-primary:active {
+  background: var(--color-accent-100);
+}
+
+.is-mobile .btn-secondary {
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid var(--color-divider);
+  color: var(--color-neutral-800);
+  border-radius: var(--radius-md);
+  min-height: 44px;
+}
+
+/* Cada vista traia su propio titulo con emoji dentro del cuerpo, ademas del
+   que dibuja la cabecera de pagina: «Presupuestos» aparecia dos veces, una en
+   la serif del sistema y otra en negrita con un emoji delante.
+   
+   Iba por el contenedor --`.rec-header > h2`, `.goals-header > h2`-- y esos
+   contenedores no existen: el titulo de Recurrentes vive en `.rec-top-bar` y
+   el de Metas en `.gl-top-bar`, asi que las dos reglas no casaban con nada y
+   los titulos seguian duplicados. Ahora se apunta a la clase del propio
+   titulo, que es lo que no cambia de sitio. */
+.is-mobile .section-header > h2,
+.is-mobile .budgets > h2,
+.is-mobile .rec-title,
+.is-mobile .gl-title {
+  display: none;
+}
+
+/* Sin el titulo, la barra superior se queda con un solo hijo y el boton se
+   apretaba contra la izquierda: que ocupe la fila. */
+.is-mobile .rec-top-bar,
+.is-mobile .gl-top-bar {
+  display: block;
+}
+
+.is-mobile .rec-add-btn,
+.is-mobile .gl-add-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ── El ocre es trazo, nunca relleno ──────────────────────────────────
+   Las vistas internas pintaban sus botones y sus estados activos con
+   `background: var(--accent-green)`. En movil ese token esta remapeado al
+   ocre, asi que cada uno salia como un bloque marron macizo con texto crema:
+   justo lo que el sistema no hace. Aqui se les da el tratamiento del sistema
+   --borde y texto para lo que se pulsa, tinte claro para lo que esta
+   elegido-- sin tocar la hoja del escritorio, que sigue con su verde.
+
+   Las barras y los puntos de los graficos no entran: ahi el relleno es el
+   dato, no una superficie. */
+.is-mobile .rec-add-btn,
+.is-mobile .gl-add-btn,
+.is-mobile .rec-empty-btn--primary,
+.is-mobile .gl-empty-btn--primary,
+.is-mobile .gl-card-cta,
+.is-mobile .gl-list-cta,
+.is-mobile .gl-drawer-btn--primary,
+.is-mobile .gl-contribute-confirm,
+.is-mobile .recap-print-btn,
+.is-mobile .txn-btn--primary,
+.is-mobile .txn-empty-cta,
+.is-mobile .txn-cal-clear,
+.is-mobile .btn-primary,
+.is-mobile .add-btn,
+.is-mobile .add-transaction-btn,
+.is-mobile .submit-btn,
+.is-mobile .catmgr-btn--save,
+.is-mobile .btn-contribute-primary,
+.is-mobile .btn-contribute-confirm,
+.is-mobile .filter-btn.add-new-btn,
+.is-mobile .rec-add-btn:hover,
+.is-mobile .gl-add-btn:hover,
+.is-mobile .btn-primary:hover,
+.is-mobile .add-btn:hover,
+.is-mobile .submit-btn:hover {
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent-700);
+  box-shadow: none;
+  transform: none;
+}
+
+/* Elegido, no pulsado: tinte claro y el ocre en el texto, como el segmented
+   del sistema. */
+.is-mobile .rec-period-btn--active,
+.is-mobile .gl-period-btn--active,
+.is-mobile .gl-view-btn--active,
+.is-mobile .recap-year-btn.active,
+.is-mobile .subs-filter-tabs button.active,
+.is-mobile .filter-btn.active,
+.is-mobile .type-btn.active,
+.is-mobile .owner-segmented-btn.active,
+.is-mobile .owner-chip.active {
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+  border-color: var(--color-accent);
+}
+
+/* «Plan positivo» era la unica superficie verde de la app, con su flecha a
+   juego, en una pantalla donde el unico color con significado es el ocre y el
+   rojo del aviso. Lo bueno no necesita anunciarse en color: queda como chip
+   neutro, y el negativo se queda con el rojo, que si tiene que llamar. */
+.is-mobile .rec-header-badge {
+  background: transparent;
+  border: 1px solid var(--color-divider);
+  color: var(--color-neutral-800);
+  font-size: var(--cl-fs-meta);
+  line-height: var(--cl-lh-meta);
+  font-weight: 500;
+}
+
+.is-mobile .rec-header-badge--negative {
+  border-color: color-mix(in srgb, var(--cl-alert) 35%, transparent);
+  color: var(--cl-alert);
+}
+
+/* Los emoji que quedan como icono de fila no pertenecen al sistema y ademas
+   son la unica fuente de color saturado de la pantalla. */
+.is-mobile .budget-suggestion-icon,
+.is-mobile .budget-bar-icon {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   INTERACCION
+   ═══════════════════════════════════════════════════════════════════
+   En movil no hay hover: el estado que importa es el de presion, y tiene que
+   verse antes de los 100ms o el toque se siente perdido. Hasta aqui solo el
+   FAB y los botones tenian respuesta; filas, chips y pestanias no daban
+   ninguna senal hasta que cambiaba la pantalla. */
+
+.is-mobile {
+  /* Tres duraciones, ni una mas. */
+  --cl-t-press: 120ms;   /* presionar y soltar */
+  --cl-t-state: 200ms;   /* cambio de estado: pestania activa, chip elegido */
+  --cl-t-enter: 320ms;   /* entrada de hojas y modales */
+  --cl-ease-enter: cubic-bezier(0.2, 0, 0, 1);
+  --cl-ease-press: ease-out;
+}
+
+/* Higiene tactil. El rectangulo cian de Android es el mismo azul ajeno que ya
+   quitamos del avatar; sin esto reaparece en cada toque. touch-action evita
+   el retardo del doble toque para zoom, y user-select impide que al pulsar
+   «Fijos» se seleccione el texto. */
+.is-mobile button,
+.is-mobile [role='button'],
+.is-mobile .cl-settings-row,
+.is-mobile .cl-mov-row,
+.is-mobile .cl-tab,
+.is-mobile .cl-chip {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Filas: el fondo de presion sangra hasta los margenes de pantalla, para que
+   la zona tocada coincida con la que se ilumina. Nunca bajar la opacidad de
+   la fila entera: apaga el texto y se ve barato.
+
+   El sangrado va en un pseudo-elemento, no en la caja. Antes era
+   `margin-inline: -20px; padding-inline: 20px`, que ensancha la fila de
+   verdad: en Movimientos cada fila vive dentro de .mobile-swipe-item, que
+   mide 350px, empieza en x=20 y recorta con overflow hidden y esquinas
+   redondeadas. La fila se dibujaba de 0 a 390 y el recorte la cortaba en 20 y
+   370, dejando fragmentos de la linea separadora en las esquinas. Ensanchar
+   la caja tambien sacaba el borde inferior a todo lo ancho, que no es lo que
+   hacen las filas de Inicio: la linea queda alineada con el texto y lo unico
+   que sangra es el tinte. */
+.is-mobile .cl-settings-row,
+.is-mobile .cl-mov-row {
+  position: relative;
+  /* Sin esto el tinte, que va en z-index -1, se escapa de la fila y termina
+     detras del fondo opaco del contenedor de turno: en Ajustes no se veia.
+     Aislando, el -1 solo significa «debajo del texto de esta fila». */
+  isolation: isolate;
+}
+
+.is-mobile .cl-settings-row::before,
+.is-mobile .cl-mov-row::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0 calc(var(--screen-pad) * -1);
+  background: transparent;
+  transition: background var(--cl-t-press) var(--cl-ease-press);
+}
+
+.is-mobile .cl-settings-row:active::before,
+.is-mobile .cl-mov-row:active::before {
+  background: rgba(32, 31, 29, 0.04);
+}
+
+/* La accion se hunde al pulsarla, como el resto de la barra. */
+.is-mobile .cl-tab-accion-icono {
+  transition: transform var(--cl-t-press) var(--cl-ease-press),
+              background var(--cl-t-press) var(--cl-ease-press);
+}
+
+.is-mobile .cl-tab-accion:active .cl-tab-accion-icono {
+  transform: scale(0.94);
+}
+
+/* Chips: el borde vira a oro. */
+.is-mobile .cl-chip {
+  transition: border-color var(--cl-t-state) var(--cl-ease-press),
+              background var(--cl-t-state) var(--cl-ease-press),
+              color var(--cl-t-state) var(--cl-ease-press);
+}
+
+.is-mobile .cl-chip:active {
+  border-color: var(--color-accent);
+}
+
+/* Pestanias: el icono baja un pixel y el color transiciona. Sin ripple, que
+   no encaja con lo editorial. */
+.is-mobile .cl-tab {
+  transition: color var(--cl-t-press) var(--cl-ease-press);
+}
+
+.is-mobile .cl-tab svg {
+  transition: transform var(--cl-t-press) var(--cl-ease-press);
+}
+
+.is-mobile .cl-tab:active svg {
+  transform: translateY(1px);
+}
+
+/* El destino activo no se distingue solo por color. */
+.is-mobile .cl-tab.active .cl-tab-label {
+  font-weight: 600;
+}
+
+/* Segmented: la pildora se desplaza en vez de aparecer de golpe en la nueva
+   posicion. El indice activo llega por --cl-seg-activo desde el componente,
+   que es el unico que sabe cual esta elegido. */
+.is-mobile .cl-segmented {
+  position: relative;
+  isolation: isolate;
+}
+
+.is-mobile .cl-segmented::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0 auto 0 0;
+  width: calc(100% / var(--cl-seg-total, 3));
+  background: var(--color-accent-100);
+  transform: translateX(calc(100% * var(--cl-seg-activo, 0)));
+  transition: transform var(--cl-t-state) var(--cl-ease-enter);
+}
+
+/* El fondo lo pinta la pildora; el boton solo aporta el color del texto, que
+   ademas sube de peso para no depender del tinte. */
+.is-mobile .cl-segmented > button[aria-selected='true'] {
+  background: transparent;
+  font-weight: 600;
+  transition: color var(--cl-t-state) var(--cl-ease-press);
+}
+
+/* El aviso salia a 24px del borde inferior: detras de la barra de pestanias.
+   Se apoya justo encima de ella. Estuvo mas alto mientras el boton de
+   registrar flotaba en esa esquina; ahora que vive en la barra ya no hay nada
+   que esquivar. Y se estira de lado a lado: a 390px un ancho automatico parte
+   el texto en tres lineas. */
+.is-mobile .toast-container {
+  right: var(--screen-pad);
+  left: var(--screen-pad);
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+
+/* El aviso no llevaba tipografia propia: heredaba los 16px por defecto del
+   navegador y line-height normal, o sea el unico texto de la app fuera de la
+   escala. */
+.is-mobile .toast {
+  font-size: var(--cl-fs-body);
+  line-height: var(--cl-lh-body);
+  color: var(--color-text);
+}
+
+
+/* Foco solo por teclado: con :focus pelado el anillo aparece tambien al
+   tocar con el dedo. */
+.is-mobile :focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Un solo bloque para todo lo anterior. */
+@media (prefers-reduced-motion: reduce) {
+  .is-mobile *,
+  .is-mobile *::before,
+  .is-mobile *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

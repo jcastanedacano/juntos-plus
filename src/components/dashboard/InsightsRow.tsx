@@ -83,7 +83,7 @@ export function InsightsRow({
       </div>
       {insights.length === 0 ? (
         <div className="insights-empty">
-          Sin sugerencias por ahora — todo va en orden ✨
+          Sin sugerencias por ahora: todo va en orden ✨
         </div>
       ) : (
         <div className="insights-row">

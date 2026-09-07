@@ -188,7 +188,7 @@ export function HeroCard({
           <h3>Ritmo del mes</h3>
           <span
             className="hero-fx-chip"
-            title={`Tipo de cambio · USD ${fxRates.USD.toFixed(2)} · EUR ${fxRates.EUR.toFixed(2)} — editable en Pareja`}
+            title={`Tipo de cambio · USD ${fxRates.USD.toFixed(2)} · EUR ${fxRates.EUR.toFixed(2)} (editable en Pareja)`}
           >
             TC <strong>S/ {fxRates.USD.toFixed(2)}</strong> / USD
           </span>

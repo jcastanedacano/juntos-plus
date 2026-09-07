@@ -256,9 +256,8 @@ function App() {
 
       // One-shot owner backfill: existing transactions/recurring imported
       // before the owner field existed have it as undefined. Per user
-      // preference, default those to "me" — the signed-in user. Items tagged
-      // 'shared' or 'partner' explicitly are left alone. Guarded by a
-      // localStorage
+      // preference, default those to "me" (Jorge). Items explicitly tagged
+      // 'shared' or 'partner' are left alone. Guarded by a localStorage
       // flag so we don't keep rewriting on every load.
       let txsAfterBackfill = loadedTransactions;
       let recAfterBackfill = fixedRecurring;
@@ -837,7 +836,7 @@ function App() {
         handleImport(all);
         addToast({
           type: 'success',
-          message: `Importadas ${all.length} transacciones desde PDF — ${summary.join(' · ')}.`,
+          message: `Importadas ${all.length} transacciones desde PDF: ${summary.join(' · ')}.`,
           duration: 10000,
         });
       } catch (err: unknown) {
@@ -1261,7 +1260,7 @@ function App() {
                 type: isExpense ? 'expense' : 'income',
                 amount: txAmount,
                 category: isExpense ? 'other-expense' : 'other-income',
-                description: `Ajuste de saldo (${target.name}) — diferencia con BCP${historical ? ' [histórico]' : ''}`,
+                description: `Ajuste de saldo (${target.name}), diferencia con BCP${historical ? ' [histórico]' : ''}`,
                 date: date.toISOString().slice(0, 10),
                 accountId: target.id,
                 currency: 'PEN',
@@ -1643,7 +1642,7 @@ function App() {
                     type: isExpense ? 'expense' : 'income',
                     amount,
                     category: isExpense ? 'other-expense' : 'other-income',
-                    description: `Ajuste de saldo (${target.name}) — diferencia con BCP${r.historical ? ' [histórico]' : ''}`,
+                    description: `Ajuste de saldo (${target.name}), diferencia con BCP${r.historical ? ' [histórico]' : ''}`,
                     date: date.toISOString().slice(0, 10),
                     accountId: target.id,
                     currency: 'PEN',

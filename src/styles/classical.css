@@ -1807,3 +1807,89 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Pulido visual: tercera pasada ────────────────────────────────────────
+   Cuatro cosas que se ven en el movil real y no en el CSS leido de corrido. */
+
+/* 1. El hueco muerto del final de cada pantalla.
+   El colchon inferior era de 152px, calculado cuando el boton de registrar
+   flotaba por encima de la barra. Ahora «Registrar» es una columna mas de la
+   rejilla y la barra mide 78px: sobraban 74px de blanco debajo de la ultima
+   fila, que en una pantalla corta se lee como que la lista se corto. */
+.is-mobile .cl-screen {
+  padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+}
+
+/* 2. La barra inferior tambien iba alta. Los 22px fijos de abajo se pensaron
+   para el indicador de inicio del iPhone, pero ese hueco ya lo da
+   env(safe-area-inset-bottom): en un telefono con indicador se sumaban los
+   dos y en uno sin el quedaban 22px de aire bajo las etiquetas. */
+.is-mobile .cl-tabbar {
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+}
+
+/* 3. Las acciones de deslizar de Movimientos.
+   Debajo van dos bloques de color solido --azul de editar, rojo de borrar--
+   que la fila tapa por encima. Cuando el alto de la fila cae en un decimal
+   (64.79px), la capa de arriba y la de abajo redondean distinto y asoma medio
+   pixel de cada color al pie de CADA fila: dos rayitas de colores que no
+   pertenecen a este sistema.
+
+   Se arregla en el origen. El sistema no usa rellenos solidos, asi que las
+   acciones pasan a trazo sobre el fondo de la pagina: si vuelve a asomar
+   medio pixel, es del mismo color que el papel. */
+.is-mobile .mobile-swipe-actions {
+  background: var(--color-bg);
+}
+
+.is-mobile .mobile-swipe-edit,
+.is-mobile .mobile-swipe-delete {
+  background: var(--color-bg);
+}
+
+.is-mobile .mobile-swipe-edit {
+  color: var(--color-accent-700);
+}
+
+.is-mobile .mobile-swipe-delete {
+  color: var(--cl-alert);
+}
+
+/* 4. «Ver tambien»: cuatro destinos con flex: 1 1 auto entran tres en una
+   linea y el cuarto se estira a todo el ancho. Ese boton gordo huerfano
+   pesa mas que los otros tres sin serlo. Que cada uno mida lo que dice y
+   envuelvan a la izquierda, como una linea de texto. */
+.is-mobile .cl-jump > button {
+  flex: 0 1 auto;
+}
+
+/* 5. Grafico de ritmo: la linea sola sobre 76px de blanco no se leia como un
+   grafico. El area bajo la curva le da cuerpo. Tinte suave, nunca relleno
+   solido: es la regla del sistema para el oro. */
+.is-mobile .cl-trend-area {
+  fill: var(--color-accent);
+  fill-opacity: 0.12;
+  stroke: none;
+}
+
+/* La escala pertenece al grafico y la leyenda lo explica: van en ese orden y
+   con aire distinto, no como dos filas grises seguidas. */
+.is-mobile .cl-chart-axis {
+  margin-top: 6px;
+}
+
+.is-mobile .cl-trend-legend {
+  margin-top: 10px;
+}
+
+/* 6. Nosotros sin asignar: el hueco del monto se rellena con una raya, y al
+   heredar el cuerpo del monto salia en Cormorant a 28px. Una raya de ese
+   tamanio parece un elemento de diseno, no un dato que falta. Al cuerpo de
+   los metadatos vuelve a decir lo que decia. */
+.is-mobile .cl-person-vacio {
+  font-family: var(--font-body);
+  font-size: var(--cl-fs-label);
+  line-height: var(--cl-lh-label);
+  font-weight: 400;
+  color: var(--color-neutral-700);
+}

@@ -137,7 +137,7 @@ export function SubscriptionsView({ transactions, recurring, currency, dismissed
           </div>
           {duplicates.map(dup => (
             <div key={dup.id} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '1.5rem' }}>
-              • {dup.reasonLabel} — {formatCurrency(dup.monthlyCost, currency)}/mes
+              • {dup.reasonLabel}: {formatCurrency(dup.monthlyCost, currency)}/mes
             </div>
           ))}
         </div>

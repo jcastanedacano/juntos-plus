@@ -494,7 +494,7 @@ export const TransactionModal = ({
                   <div className="tm-ocr-result">
                     <div className="tm-ocr-result-header">
                       <CheckCircle2 size={14} style={{ color: 'var(--success)' }} />
-                      <span>Datos extraídos — confianza {ocrResult.confidence}%</span>
+                      <span>Datos extraídos, confianza {ocrResult.confidence}%</span>
                       {ocrResult.confidence < 50 && (
                         <button
                           type="button"

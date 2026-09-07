@@ -314,7 +314,7 @@ export function YearRecap({ transactions, goals, currency }: YearRecapProps) {
               <div>
                 <div className="dr-card-title">Compartido vs individual</div>
                 <div className="dr-card-sub">
-                  Quién pagó qué durante todo {recap.year} — insumo Slide 4 / Slide 8
+                  Quién pagó qué durante todo {recap.year} (insumo Slide 4 / Slide 8)
                 </div>
               </div>
             </div>
@@ -391,7 +391,7 @@ export function YearRecap({ transactions, goals, currency }: YearRecapProps) {
           {/* ─── Footer note: "para el PowerPoint Night" ──────────────── */}
           <div className="recap-cta-note">
             💡 Esta vista resume tu año en cifras. Úsala como insumo para tu reunión
-            <strong> Finanzas en Pareja {recap.year + 1}</strong> — son las preguntas
+            <strong> Finanzas en Pareja {recap.year + 1}</strong>. Son las preguntas
             del Slide 2: ¿qué hicimos bien?, ¿qué fue difícil?, ¿qué nos sorprendió?, ¿qué aprendimos?
             Usa el botón <strong>Imprimir / PDF</strong> arriba para exportarla y pegarla en el PPT.
           </div>

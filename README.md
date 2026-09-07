@@ -73,8 +73,8 @@ Sin base de datos: un archivo JSON y un candado de escritura.
 Necesitas Node 20+ y un registro de aplicación en Microsoft Entra ID.
 
 ```bash
-git clone https://github.com/jcastanedacano/juntos-plus-1.git
-cd juntos-plus-1
+git clone https://github.com/jcastanedacano/juntos-plus.git
+cd juntos-plus
 npm install
 cp .env.example .env
 ```

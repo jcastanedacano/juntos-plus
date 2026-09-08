@@ -148,9 +148,18 @@ jobs:
           echo "El despliegue no quedo activo dentro del tiempo esperado"
           exit 1
 
-      - name: Comprobar que responde
+      - name: Comprobar que responde ESTE commit
         # Un deploy que "termina bien" pero deja la app caida no es un deploy
-        # bueno. Se le da tiempo a arrancar y se exige un healthz sano.
+        # bueno. Y uno que deja la app en pie con el codigo anterior, tampoco.
+        #
+        # Antes bastaba un 200 en /healthz, y eso lo cumple el proceso VIEJO:
+        # App Service lo mantiene sirviendo hasta que lo reemplaza. Visto en
+        # vivo: el paso dio verde a los pocos segundos, contra el build
+        # anterior, y la app no reinicio hasta un minuto despues. Un build
+        # roto habria pasado igual de verde.
+        #
+        # Ahora se exige que /healthz devuelva el sello de este commit, que es
+        # la unica prueba de que lo que sirve es lo que se acaba de compilar.
         #
         # La URL sale de la variable APP_URL del repositorio; si no esta, cae
         # al dominio por defecto de App Service. Asi el workflow sirve tal
@@ -158,16 +167,18 @@ jobs:
         env:
           APP_URL: ${{ vars.APP_URL || format('https://{0}.azurewebsites.net', vars.AZURE_WEBAPP_NAME) }}
         run: |
-          echo "Comprobando $APP_URL/healthz"
-          for i in $(seq 1 20); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/healthz" || true)
-            echo "intento $i -> HTTP $code"
-            if [ "$code" = "200" ]; then
-              curl -s "$APP_URL/healthz"
-              echo
+          esperado="${GITHUB_SHA:0:7}"
+          echo "Esperando que $APP_URL/healthz informe build=$esperado"
+          for i in $(seq 1 30); do
+            cuerpo=$(curl -s --max-time 10 "$APP_URL/healthz" || true)
+            visto=$(echo "$cuerpo" | grep -o '"build":"[^"]*"' | cut -d'"' -f4)
+            echo "intento $i -> build=${visto:-sin respuesta}"
+            if [ "$visto" = "$esperado" ]; then
+              echo "$cuerpo"
               exit 0
             fi
             sleep 15
           done
-          echo "La app no respondio 200 en /healthz despues del despliegue"
+          echo "Tras el despliegue, /healthz sigue sin informar build=$esperado"
+          echo "Ultima respuesta: $cuerpo"
           exit 1

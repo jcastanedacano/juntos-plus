@@ -2,8 +2,9 @@
 
 # Juntos+1
 
-**Una PWA de finanzas para parejas.** En español, calibrada para Perú: soles y
-dólares, tarjetas BCP, Yape, TEA, cuotas.
+**Una PWA de finanzas para parejas.** En español. Las cuentas se llevan en la
+moneda que elijas al empezar, entre soles, dólares y euros, y lo que registre
+cada uno queda atribuido a quien lo pagó.
 
 [![Licencia MIT](https://img.shields.io/badge/licencia-MIT-b68235?style=flat-square)](LICENSE)
 [![React 18](https://img.shields.io/badge/React-18-b68235?style=flat-square)](https://react.dev)
@@ -25,8 +26,9 @@ no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 > [!NOTE]
 > Proyecto personal, publicado por si le sirve a alguien más. Está hecho para
 > el caso de uso de una pareja concreta y se nota: la interfaz está solo en
-> español, el login exige Microsoft Entra ID y varios cálculos asumen
-> convenciones peruanas. Nada de eso es difícil de cambiar, pero hoy es así.
+> español, y la parte bancaria es peruana. Importa el PDF del BCP, entiende
+> Yape, y la tarjeta de crédito razona con TEA y cuotas. El resto de la
+> aplicación no depende de eso, pero esas pantallas sí.
 
 ---
 

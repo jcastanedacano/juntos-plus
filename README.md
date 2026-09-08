@@ -12,6 +12,8 @@ cada uno queda atribuido a quien lo pagó.
 [![Vite](https://img.shields.io/badge/Vite-6-b68235?style=flat-square)](https://vite.dev)
 [![PWA](https://img.shields.io/badge/PWA-Workbox-b68235?style=flat-square)](https://vite-pwa-org.netlify.app)
 
+**[Instancia en vivo](https://juntos.d3fend.me/)** · requiere cuenta para entrar
+
 No pretende reemplazar al banco. Pretende responder dos preguntas que el banco
 no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 
@@ -228,5 +230,11 @@ MIT. Ver [LICENSE](LICENSE).
 ---
 
 <div align="center">
-<sub>Construido con <a href="https://claude.com/claude-code">Claude Code</a>.</sub>
+
+### 👤 Autor
+
+**Jorge Castañeda**
+
+[LinkedIn](https://www.linkedin.com/in/jcastanedacano) · [GitHub](https://github.com/jcastanedacano)
+
 </div>

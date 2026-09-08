@@ -13,32 +13,19 @@ if (!CLIENT_ID || !TENANT_ID) {
   );
 }
 
-// Entra External ID, opcional. Es otro tenant, con su propia autoridad y su
-// propia aplicacion, y es la puerta para quien no esta en el directorio de
-// trabajo: cuentas de Google, correo suelto. Sin estas variables la aplicacion
-// se comporta igual que siempre y el boton ni aparece.
-const EXTERNAL_CLIENT_ID = import.meta.env.VITE_EXTERNAL_CLIENT_ID;
-const EXTERNAL_TENANT_ID = import.meta.env.VITE_EXTERNAL_TENANT_ID;
-const EXTERNAL_SUBDOMAIN = import.meta.env.VITE_EXTERNAL_SUBDOMAIN;
-
-export const LOGIN_EXTERNO_ACTIVO = Boolean(
-  EXTERNAL_CLIENT_ID && EXTERNAL_TENANT_ID && EXTERNAL_SUBDOMAIN
-);
-
-/** Autoridad del tenant externo. Vacia si no esta configurado. */
-export const AUTORIDAD_EXTERNA = LOGIN_EXTERNO_ACTIVO
-  ? `https://${EXTERNAL_SUBDOMAIN}.ciamlogin.com/${EXTERNAL_TENANT_ID}`
-  : '';
+// Quien entra con Google lo hace por la MISMA puerta: se registra como invitado
+// del directorio de trabajo, asi que su token viene de la misma autoridad y con
+// la misma audiencia. No hay segundo tenant ni segunda autoridad; lo unico que
+// cambia es una pista que lleva al usuario directo a Google.
+//
+// La bandera existe para no ensenar el boton antes de que el directorio tenga
+// configurado el auto-registro: seria un boton que lleva a un error.
+export const LOGIN_GOOGLE_ACTIVO = import.meta.env.VITE_GOOGLE_ACTIVO === 'true';
 
 export const msalConfig: Configuration = {
   auth: {
     clientId: CLIENT_ID,
     authority: `https://login.microsoftonline.com/${TENANT_ID}`,
-    // MSAL rechaza cualquier autoridad que no sea la suya salvo que se declare
-    // aqui: ciamlogin.com no esta en su lista de confianza por defecto.
-    knownAuthorities: LOGIN_EXTERNO_ACTIVO
-      ? [`${EXTERNAL_SUBDOMAIN}.ciamlogin.com`]
-      : [],
     redirectUri: window.location.origin,
     postLogoutRedirectUri: window.location.origin,
   },

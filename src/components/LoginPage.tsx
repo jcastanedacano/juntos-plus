@@ -1,8 +1,6 @@
 import { useMsal } from '@azure/msal-react';
-import {
-  loginRequest, readLoginHint, AUTORIDAD_EXTERNA, LOGIN_EXTERNO_ACTIVO,
-} from '../auth/msalConfig';
-import { Shield, TrendingUp, PiggyBank, BarChart3, CreditCard, Mail } from 'lucide-react';
+import { loginRequest, readLoginHint, LOGIN_GOOGLE_ACTIVO } from '../auth/msalConfig';
+import { Shield, TrendingUp, PiggyBank, BarChart3, CreditCard } from 'lucide-react';
 
 /** La G de Google, con sus colores. Es una marca ajena: se dibuja tal cual. */
 function MarcaGoogle() {
@@ -29,24 +27,22 @@ export function LoginPage() {
     });
   };
 
-  // El tenant externo tiene su propia autoridad, asi que va como parametro de
-  // la peticion y no en la configuracion: la misma aplicacion atiende las dos
-  // puertas. Sin loginHint a proposito: quien entra por aqui puede venir de
-  // Google o de un correo suelto, y el hint guardado es del otro directorio.
-  const entrarPorFuera = (extra?: Record<string, string>) => {
+  // Misma autoridad que el boton de arriba: quien llega con Google se registra
+  // como invitado de este directorio. Sin loginHint a proposito, porque el hint
+  // guardado es de una cuenta de trabajo y aqui viene otra persona.
+  //
+  // domain_hint lleva directo a Google sin pasar por el selector. Es una pista:
+  // si el flujo no la reconoce, sale el formulario normal en vez de fallar.
+  const conGoogle = () => {
     instance.loginRedirect({
       ...loginRequest,
-      authority: AUTORIDAD_EXTERNA,
-      ...(extra ? { extraQueryParameters: extra } : {}),
+      extraQueryParameters: { domain_hint: 'google.com' },
     });
   };
 
-  // domain_hint salta directo a Google sin pasar por el selector; prompt=create
-  // abre el registro en vez del inicio de sesion. Los dos son pistas: si el
-  // flujo no las reconoce, se cae al formulario normal en vez de fallar.
-  const conGoogle = () => entrarPorFuera({ domain_hint: 'google.com' });
-  const conCorreo = () => entrarPorFuera();
-  const registrarse = () => entrarPorFuera({ prompt: 'create' });
+  const registrarse = () => {
+    instance.loginRedirect({ ...loginRequest });
+  };
 
   return (
     <div className="login-page">
@@ -84,18 +80,13 @@ export function LoginPage() {
             <span>Iniciar sesión con Microsoft</span>
           </button>
 
-          {LOGIN_EXTERNO_ACTIVO && (
+          {LOGIN_GOOGLE_ACTIVO && (
             <>
               <div className="login-sep"><span>o</span></div>
 
               <button className="login-btn login-btn-google" onClick={conGoogle}>
                 <MarcaGoogle />
                 <span>Continuar con Google</span>
-              </button>
-
-              <button className="login-btn login-btn-alt" onClick={conCorreo}>
-                <Mail size={18} />
-                <span>Continuar con tu correo</span>
               </button>
 
               {/* Registrarse no es lo mismo que entrar, asi que no compite como

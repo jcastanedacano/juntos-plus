@@ -171,7 +171,6 @@ async function crearHogar(req, nombre) {
     nombre: (nombre || '').trim() || 'Mi hogar',
     creado: new Date().toISOString(),
     origen: 'alta',
-    abiertoAlDirectorio: false,
   };
   mapa.usuarios[clave] = id;
   anotarCorreo(mapa, clave, correoDelToken(req.user));
@@ -453,62 +452,38 @@ if (!TENANT_ID || !CLIENT_ID) {
   }
   console.warn(aviso);
 }
-// Entra External ID, opcional. Es OTRO tenant, con su propio emisor y su
-// propia aplicacion, y sirve para que entre gente que no esta en el directorio
-// de trabajo: cuentas de Google, correo suelto. Si no esta configurado, la
-// aplicacion se comporta exactamente como antes.
-const EXTERNAL_TENANT_ID = process.env.EXTERNAL_TENANT_ID;
-const EXTERNAL_CLIENT_ID = process.env.EXTERNAL_CLIENT_ID;
-const EXTERNAL_SUBDOMAIN = process.env.EXTERNAL_SUBDOMAIN;
-const EXTERNAL_ENABLED = Boolean(EXTERNAL_TENANT_ID && EXTERNAL_CLIENT_ID && EXTERNAL_SUBDOMAIN);
-
 /**
  * Quien puede entrar, por correo, separado por comas. OPCIONAL.
  *
- * Cuando escribi esta lista, un data.json unico era de quien consiguiera un
- * token: abrir un tenant externo con registro libre habria entregado las
- * finanzas de la pareja a cualquiera con un Gmail. La lista era el unico
- * candado, y por eso fallaba cerrada.
+ * Quien se registra con Google entra como INVITADO de este mismo directorio, no
+ * por una segunda puerta: su token trae el mismo emisor y la misma audiencia que
+ * el de cualquiera de la casa. Por eso ya no hay una lista «para los de fuera»:
+ * a efectos del token no hay fuera.
  *
- * La particion por hogares cambio eso de raiz. Quien llega nuevo estrena un
- * hogar vacio y no ve un sol ajeno, ni podria: el hogar se resuelve desde su
- * identidad, no desde lo que pida. La lista ya no protege datos --solo limita
- * quien puede abrirse una cuenta en este servidor-- asi que pasa a ser
- * opcional: con lista, registro cerrado; sin lista, registro abierto.
- *
- * Es un cambio de significado de la MISMA variable, que es justo el tipo de
- * cosa que muerde en silencio. Por eso el arranque dice en voz alta cual de
- * los dos modos quedo activo.
+ * Lo que separa a unos de otros son los hogares, y eso no se negocia por
+ * configuracion. Esta lista es un freno de mano: si esta puesta, solo entran
+ * esos correos; si esta vacia, entra quien el directorio deje entrar.
  */
 const ALLOWED_USERS = (process.env.ALLOWED_USERS || '')
   .split(',')
   .map(c => c.trim().toLowerCase())
   .filter(Boolean);
 
-if (EXTERNAL_ENABLED) {
-  console.log(
-    ALLOWED_USERS.length === 0
-      ? '[auth] registro ABIERTO: cualquiera puede crear cuenta y estrena un hogar vacio.'
-      : `[auth] registro CERRADO a ${ALLOWED_USERS.length} correo(s) de ALLOWED_USERS.`
-  );
-}
+console.log(
+  ALLOWED_USERS.length === 0
+    ? '[auth] sin lista: entra quien el directorio autorice, y estrena hogar vacio.'
+    : `[auth] lista activa: solo ${ALLOWED_USERS.length} correo(s) de ALLOWED_USERS.`
+);
 
-// Un emisor por proveedor, cada uno con su audiencia y su juego de claves.
+// Un unico emisor: el directorio de trabajo. Los invitados con Google son
+// cuentas de ESTE directorio, asi que su token sale de aqui igual que el resto.
 const EMISORES = [
   {
     nombre: 'trabajo',
     issuer: `https://login.microsoftonline.com/${TENANT_ID}/v2.0`,
     audiencia: CLIENT_ID,
     jwksUri: `https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`,
-    sujetoALista: false,
   },
-  ...(EXTERNAL_ENABLED ? [{
-    nombre: 'externo',
-    issuer: `https://${EXTERNAL_TENANT_ID}.ciamlogin.com/${EXTERNAL_TENANT_ID}/v2.0`,
-    audiencia: EXTERNAL_CLIENT_ID,
-    jwksUri: `https://${EXTERNAL_SUBDOMAIN}.ciamlogin.com/${EXTERNAL_TENANT_ID}/discovery/v2.0/keys`,
-    sujetoALista: true,
-  }] : []),
 ];
 
 for (const e of EMISORES) {
@@ -525,9 +500,8 @@ function correoDelToken(t) {
   return String(t.preferred_username || t.email || t.upn || '').trim().toLowerCase();
 }
 
-function permitido(decoded, emisor) {
-  if (!emisor.sujetoALista) return true;       // el directorio de trabajo ya es la lista
-  if (ALLOWED_USERS.length === 0) return true; // registro abierto
+function permitido(decoded) {
+  if (ALLOWED_USERS.length === 0) return true;
   const correo = correoDelToken(decoded);
   return Boolean(correo) && ALLOWED_USERS.includes(correo);
 }
@@ -579,7 +553,7 @@ const authMiddleware = async (req, res, next) => {
       console.error(`[auth] token invalido (${emisor.nombre}):`, r.error.message);
       return res.status(401).json({ error: 'Invalid token' });
     }
-    if (!permitido(r.decoded, emisor)) {
+    if (!permitido(r.decoded)) {
       // 403 y no 401: el token es bueno, quien lo trae no esta invitado. Un
       // 401 haria que el cliente reintentara el login en bucle.
       console.warn(`[auth] fuera de la lista: ${correoDelToken(r.decoded) || '(sin correo)'}`);

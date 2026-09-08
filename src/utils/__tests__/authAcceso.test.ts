@@ -4,8 +4,6 @@ import { describe, it, expect, afterEach } from 'vitest';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { correoDelToken, permitido } = require('../../../server.cjs');
 
-const externo = { nombre: 'externo', sujetoALista: true };
-const trabajo = { nombre: 'trabajo', sujetoALista: false };
 
 /**
  * ALLOWED_USERS se lee al cargar el modulo, asi que probar el modo cerrado
@@ -40,28 +38,25 @@ describe('de donde sale el correo del token', () => {
 });
 
 describe('quien puede entrar', () => {
-  it('el tenant de trabajo no mira la lista: el directorio ya es la lista', () => {
-    expect(permitido({ preferred_username: 'quien@sea.com' }, trabajo)).toBe(true);
-    expect(permitido({}, trabajo)).toBe(true);
-  });
-
   // La lista dejo de ser el candado de los datos el dia que cada quien tiene su
-  // hogar: sin lista, cualquiera entra, y lo que ve es un hogar vacio suyo.
-  it('sin lista configurada, el registro esta abierto', () => {
-    expect(permitido({ preferred_username: 'desconocida@gmail.com' }, externo)).toBe(true);
+  // hogar. Quien entra con Google es un invitado de este mismo directorio, y lo
+  // que ve al entrar es un hogar vacio suyo.
+  it('sin lista, entra quien el directorio autorice', () => {
+    expect(permitido({ preferred_username: 'desconocida@gmail.com' })).toBe(true);
+    expect(permitido({})).toBe(true);
   });
 
-  it('con lista configurada, solo entra quien esta en ella', () => {
+  it('con lista, solo entra quien esta en ella', () => {
     const s = cargarConLista('ana@gmail.com, Beto@Gmail.com');
-    expect(s.permitido({ preferred_username: 'ana@gmail.com' }, externo)).toBe(true);
+    expect(s.permitido({ preferred_username: 'ana@gmail.com' })).toBe(true);
     // La lista se normaliza al leerla, asi que las mayusculas no dejan a nadie fuera.
-    expect(s.permitido({ preferred_username: 'beto@gmail.com' }, externo)).toBe(true);
-    expect(s.permitido({ preferred_username: 'otro@gmail.com' }, externo)).toBe(false);
+    expect(s.permitido({ preferred_username: 'beto@gmail.com' })).toBe(true);
+    expect(s.permitido({ preferred_username: 'otro@gmail.com' })).toBe(false);
   });
 
   it('con lista, un token sin correo no entra', () => {
     const s = cargarConLista('ana@gmail.com');
-    expect(s.permitido({ sub: 'oid-suelto' }, externo)).toBe(false);
-    expect(s.permitido({ preferred_username: '' }, externo)).toBe(false);
+    expect(s.permitido({ sub: 'oid-suelto' })).toBe(false);
+    expect(s.permitido({ preferred_username: '' })).toBe(false);
   });
 });

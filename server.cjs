@@ -160,14 +160,23 @@ async function hogarDe(req) {
   return id;
 }
 
+/** Las que la aplicacion sabe formatear. Cualquier otra se ignora. */
+const MONEDAS = ['PEN', 'USD', 'EUR'];
+
 /** Crea un hogar vacio y mete dentro a quien lo pide. */
-async function crearHogar(req, nombre) {
+async function crearHogar(req, nombre, moneda) {
   const clave = claveDeUsuario(req.user);
   if (!clave) return null;
   const mapa = await leerHogares();
   const id = 'h_' + Math.random().toString(36).slice(2, 10);
   await fs.mkdir(path.join(HOGARES_DIR, id), { recursive: true });
-  await fs.writeFile(archivoDeHogar(id), JSON.stringify(EMPTY_DATA, null, 2));
+  // La moneda se fija AQUI, al estrenar, y no despues: es la unidad en la que
+  // se van a apuntar los importes, y cambiarla con movimientos ya dentro
+  // reetiquetaria cifras sin convertirlas.
+  const elegida = MONEDAS.includes(String(moneda).toUpperCase())
+    ? String(moneda).toUpperCase()
+    : EMPTY_DATA.currency;
+  await fs.writeFile(archivoDeHogar(id), JSON.stringify({ ...EMPTY_DATA, currency: elegida }, null, 2));
   mapa.hogares[id] = {
     nombre: (nombre || '').trim() || 'Mi hogar',
     creado: new Date().toISOString(),
@@ -760,7 +769,7 @@ app.post('/api/hogar', async (req, res) => {
   try {
     const yaTiene = await hogarDe(req);
     if (yaTiene) return res.json({ hogarId: yaTiene, creado: false });
-    const id = await crearHogar(req, req.body && req.body.nombre);
+    const id = await crearHogar(req, req.body && req.body.nombre, req.body && req.body.moneda);
     if (!id) return res.status(400).json({ error: 'Token sin identidad utilizable' });
     console.log(`[hogares] ${correoDelToken(req.user) || id} estrena hogar ${id}`);
     res.json({ hogarId: id, creado: true });
@@ -1392,7 +1401,7 @@ module.exports = {
   correoDelToken, permitido, EMISORES,
   claveDeUsuario, leerHogares, guardarHogares, archivoDeHogar,
   migrarAHogares, hogarDe, crearHogar,
-  invitar, invitacionesPara, aceptarInvitacion, rechazarInvitacion,
+  invitar, invitacionesPara, aceptarInvitacion, rechazarInvitacion, MONEDAS,
   fusionarDatos, consolidar, miembrosDe,
 };
 

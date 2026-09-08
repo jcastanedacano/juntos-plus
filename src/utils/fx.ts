@@ -3,20 +3,23 @@ import { Transaction, CurrencyType } from '../types';
 import { tokenOpcional } from '../auth/getToken';
 import { getAPIUrl } from './storageAPI';
 
+export type { FxRates } from './fxTasas';
+export { DEFAULT_FX_RATES, simboloDe, relativas, aPen } from './fxTasas';
+import { FxRates, DEFAULT_FX_RATES, relativas, aPen } from './fxTasas';
+
 /**
- * Exchange rates with PEN as the base currency. Stored in localStorage so
- * the user can override the default 3.50 PEN/USD without a code change.
- * EUR included for completeness; user can tune.
+ * La moneda del hogar. La fija App al cargar los datos; hasta entonces, soles,
+ * que es lo que ya usaban los hogares existentes.
  */
-export type FxRates = Record<CurrencyType, number>;
+let monedaBase: CurrencyType = 'PEN';
 
-export const DEFAULT_FX_RATES: FxRates = {
-  PEN: 1,
-  USD: 3.50,
-  EUR: 4.00,
-};
+export function fijarMonedaBase(c: string | undefined): void {
+  if (c === 'PEN' || c === 'USD' || c === 'EUR') monedaBase = c;
+}
 
-export const BASE_CURRENCY: CurrencyType = 'PEN';
+export function getMonedaBase(): CurrencyType {
+  return monedaBase;
+}
 
 const STORAGE_KEY = 'juntos:fxRates';
 const CHANGE_EVENT = 'juntos:fxRates:change';
@@ -54,12 +57,20 @@ function writeStorage(rates: FxRates, meta: Partial<FxMeta>): void {
   window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
 }
 
-export function getFxRates(): FxRates {
+/** Las tasas tal cual se guardan: soles por unidad. */
+export function getFxEnPen(): FxRates {
   return readFromStorage();
 }
 
+/** Las tasas en la moneda del hogar, que es lo que la interfaz debe enseñar. */
+export function getFxRates(): FxRates {
+  return relativas(readFromStorage(), monedaBase);
+}
+
+/** Recibe lo que el usuario escribio --en la moneda del hogar-- y lo ancla. */
 export function setFxRates(rates: Partial<FxRates>): void {
-  const merged = { ...readFromStorage(), ...rates, PEN: 1 };
+  const enBase = { ...getFxRates(), ...rates, [monedaBase]: 1 } as FxRates;
+  const merged = aPen(enBase);
   // Editar a mano marca el override: a partir de aca la actualizacion
   // automatica deja de pisar el valor hasta que se vuelva a activar.
   writeStorage(merged, { manual: true, updatedAt: new Date().toISOString(), source: 'manual' });
@@ -118,10 +129,10 @@ export async function refreshFxRates(force = false): Promise<FxRates> {
   }
 }
 
-/** Convert a single amount to PEN (base). */
+/** Convierte un importe a la moneda del hogar. */
 export function toBase(amount: number, currency: CurrencyType | undefined, rates?: FxRates): number {
-  const r = rates || readFromStorage();
-  const c = (currency || BASE_CURRENCY) as CurrencyType;
+  const r = rates || getFxRates();
+  const c = (currency || monedaBase) as CurrencyType;
   const rate = r[c] || 1;
   return amount * rate;
 }
@@ -139,10 +150,10 @@ export function txBaseAmount(tx: Pick<Transaction, 'amount' | 'currency'>, rates
  * amount + currency must read from the un-projected list.
  */
 export function projectToBase(transactions: Transaction[], rates?: FxRates): Transaction[] {
-  const r = rates || readFromStorage();
+  const r = rates || getFxRates();
   return transactions.map(t => {
-    if (!t.currency || t.currency === BASE_CURRENCY) return t;
-    return { ...t, amount: txBaseAmount(t, r), currency: BASE_CURRENCY as CurrencyType };
+    if (!t.currency || t.currency === monedaBase) return t;
+    return { ...t, amount: txBaseAmount(t, r), currency: monedaBase as CurrencyType };
   });
 }
 
@@ -157,9 +168,9 @@ function subscribe(cb: () => void): () => void {
 }
 
 export function useFxRates(): FxRates {
-  const [rates, setRates] = useState<FxRates>(() => readFromStorage());
+  const [rates, setRates] = useState<FxRates>(() => getFxRates());
   useEffect(() => {
-    const update = () => setRates(readFromStorage());
+    const update = () => setRates(getFxRates());
     update();
     return subscribe(update);
   }, []);

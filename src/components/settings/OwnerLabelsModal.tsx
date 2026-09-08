@@ -1,9 +1,9 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { X, RotateCcw, Send, Check } from 'lucide-react';
 import { DEFAULT_OWNER_LABELS, getOwnerLabels, setOwnerLabels } from '../../utils/ownerLabels';
-import { DEFAULT_FX_RATES, getFxRates, setFxRates, getFxMeta, clearFxOverride } from '../../utils/fx';
+import { DEFAULT_FX_RATES, getFxRates, setFxRates, getFxMeta, clearFxOverride, getMonedaBase, simboloDe, relativas } from '../../utils/fx';
 import { getCurrentUserEmail, setUserEmailMap } from '../../utils/userIdentity';
-import { consultarHogar, invitarAlHogar, explicar, EstadoHogar } from '../../utils/hogar';
+import { consultarHogar, invitarAlHogar, explicar, EstadoHogar, MONEDAS } from '../../utils/hogar';
 
 interface OwnerLabelsModalProps {
   onClose: () => void;
@@ -13,12 +13,24 @@ interface OwnerLabelsModalProps {
 
 export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
   const initial = getOwnerLabels();
+  // Las tasas se enseñan y se editan EN LA MONEDA DEL HOGAR. Un hogar en euros
+  // no quiere leer «USD -> PEN»: quiere saber cuantos euros vale un dolar.
+  const base = getMonedaBase();
+  const simboloBase = simboloDe(base);
+  const otras = MONEDAS.filter(m => m.codigo !== base);
+  const porDefecto = relativas(DEFAULT_FX_RATES, base);
+  // Derivar entre monedas saca colas de quince decimales. Nadie edita eso, y
+  // cuatro cifras bastan: al guardar se vuelve a anclar a soles igual.
+  const conPocosDecimales = (n: number) => String(Number(n.toFixed(4)));
   const initialFx = getFxRates();
   const [shared, setShared] = useState(initial.shared);
   const [me, setMe] = useState(initial.me);
   const [partner, setPartner] = useState(initial.partner);
-  const [usdRate, setUsdRate] = useState(String(initialFx.USD));
-  const [eurRate, setEurRate] = useState(String(initialFx.EUR));
+  const [tasas, setTasas] = useState<Record<string, string>>(() => ({
+    PEN: conPocosDecimales(initialFx.PEN),
+    USD: conPocosDecimales(initialFx.USD),
+    EUR: conPocosDecimales(initialFx.EUR),
+  }));
   const [fxMeta, setFxMeta] = useState(getFxMeta());
   const [fxBusy, setFxBusy] = useState(false);
   const [hogar, setHogar] = useState<EstadoHogar | null>(null);
@@ -81,12 +93,12 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
       me: me.trim() || DEFAULT_OWNER_LABELS.me,
       partner: partner.trim() || DEFAULT_OWNER_LABELS.partner,
     });
-    const parsedUsd = parseFloat(usdRate);
-    const parsedEur = parseFloat(eurRate);
-    setFxRates({
-      USD: parsedUsd > 0 ? parsedUsd : DEFAULT_FX_RATES.USD,
-      EUR: parsedEur > 0 ? parsedEur : DEFAULT_FX_RATES.EUR,
-    });
+    const nuevas: Record<string, number> = {};
+    for (const m of otras) {
+      const v = parseFloat(tasas[m.codigo]);
+      nuevas[m.codigo] = v > 0 ? v : (porDefecto as Record<string, number>)[m.codigo];
+    }
+    setFxRates(nuevas);
     onClose();
   };
 
@@ -94,8 +106,11 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
     setShared(DEFAULT_OWNER_LABELS.shared);
     setMe(DEFAULT_OWNER_LABELS.me);
     setPartner(DEFAULT_OWNER_LABELS.partner);
-    setUsdRate(String(DEFAULT_FX_RATES.USD));
-    setEurRate(String(DEFAULT_FX_RATES.EUR));
+    setTasas({
+      PEN: conPocosDecimales(porDefecto.PEN),
+      USD: conPocosDecimales(porDefecto.USD),
+      EUR: conPocosDecimales(porDefecto.EUR),
+    });
   };
 
   return (
@@ -248,8 +263,9 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
             <span id="ol-cambio">Tipo de cambio</span>
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.5 }}>
-            Cualquier transacción en USD o EUR se multiplica por estos valores
-            para sumarse en los KPIs del Dashboard, Recap anual y banners.
+            Cualquier transacción en otra moneda se multiplica por estos valores
+            para sumarse en <strong>{simboloBase}</strong> en los KPIs del Dashboard,
+            Recap anual y banners.
             La moneda original de cada fila se conserva en la tabla.
           </p>
 
@@ -272,9 +288,15 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
                 onClick={async () => {
                   setFxBusy(true);
                   try {
-                    const next = await clearFxOverride();
-                    setUsdRate(String(next.USD));
-                    setEurRate(String(next.EUR));
+                    await clearFxOverride();
+                    // clearFxOverride devuelve el pivote; lo que se enseña es
+                    // la version en la moneda del hogar.
+                    const enBase = getFxRates();
+                    setTasas({
+                      PEN: conPocosDecimales(enBase.PEN),
+                      USD: conPocosDecimales(enBase.USD),
+                      EUR: conPocosDecimales(enBase.EUR),
+                    });
                     setFxMeta(getFxMeta());
                   } finally {
                     setFxBusy(false);
@@ -288,30 +310,20 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div className="form-group">
-              <label className="form-label">USD → PEN</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                className="form-input"
-                placeholder={String(DEFAULT_FX_RATES.USD)}
-                value={usdRate}
-                onChange={(e) => setUsdRate(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">EUR → PEN</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                className="form-input"
-                placeholder={String(DEFAULT_FX_RATES.EUR)}
-                value={eurRate}
-                onChange={(e) => setEurRate(e.target.value)}
-              />
-            </div>
+            {otras.map(m => (
+              <div className="form-group" key={m.codigo}>
+                <label className="form-label">{m.codigo} → {simboloBase}</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.0001"
+                  className="form-input"
+                  placeholder={conPocosDecimales((porDefecto as Record<string, number>)[m.codigo])}
+                  value={tasas[m.codigo]}
+                  onChange={(e) => setTasas({ ...tasas, [m.codigo]: e.target.value })}
+                />
+              </div>
+            ))}
           </div>
 
           <div className="modal-actions" style={{ justifyContent: 'space-between' }}>

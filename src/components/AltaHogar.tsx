@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Home, Users, Check, X } from 'lucide-react';
 import {
-  EstadoHogar, crearHogar, aceptarInvitacion, rechazarInvitacion, explicar,
+  EstadoHogar, crearHogar, aceptarInvitacion, rechazarInvitacion, explicar, MONEDAS,
 } from '../utils/hogar';
 
 interface Props {
@@ -19,6 +19,7 @@ interface Props {
  */
 export function AltaHogar({ estado, onListo }: Props) {
   const [nombre, setNombre] = useState('');
+  const [moneda, setMoneda] = useState('PEN');
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rechazada, setRechazada] = useState(false);
@@ -97,15 +98,36 @@ export function AltaHogar({ estado, onListo }: Props) {
               placeholder="Nuestra casa"
               onChange={e => setNombre(e.target.value)}
               onKeyDown={e => {
-                if (e.key === 'Enter' && !ocupado) ejecutar(() => crearHogar(nombre));
+                if (e.key === 'Enter' && !ocupado) ejecutar(() => crearHogar(nombre, moneda));
               }}
             />
           </label>
 
+          {/* La moneda se elige AQUI y no despues: es la unidad en la que se
+              van a apuntar los importes. Cambiarla con movimientos ya dentro
+              reetiquetaria cifras sin convertirlas, que es peor que no poder. */}
+          <fieldset className="alta-monedas">
+            <legend>¿En qué moneda lleváis las cuentas?</legend>
+            <div className="alta-monedas-fila">
+              {MONEDAS.map(m => (
+                <button
+                  key={m.codigo}
+                  type="button"
+                  className={`alta-moneda${moneda === m.codigo ? ' es-elegida' : ''}`}
+                  aria-pressed={moneda === m.codigo}
+                  onClick={() => setMoneda(m.codigo)}
+                >
+                  <span className="alta-moneda-simbolo">{m.simbolo}</span>
+                  <span className="alta-moneda-nombre">{m.nombre}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
           <button
             className="login-btn"
             disabled={ocupado}
-            onClick={() => ejecutar(() => crearHogar(nombre))}
+            onClick={() => ejecutar(() => crearHogar(nombre, moneda))}
           >
             <Home size={18} />
             <span>{ocupado ? 'Creando…' : 'Crear mi hogar'}</span>

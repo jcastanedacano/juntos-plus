@@ -107,8 +107,23 @@ const MOTIVOS: Record<string, string> = {
   destino_ilegible: 'No se pudieron leer los datos del otro hogar. No se cambió nada.',
   fusion_fallida: 'No se pudo unir la información, así que no se tocó nada. Inténtalo de nuevo.',
   sin_red: 'Sin conexión con el servidor.',
+  sin_identidad: 'Tu sesión no trae un identificador utilizable. Cierra sesión y vuelve a entrar.',
+  http_401: 'Tu sesión caducó. Cierra sesión y vuelve a entrar.',
+  http_403: 'Tu cuenta no tiene acceso.',
+  http_400: 'El servidor rechazó la petición.',
+  http_500: 'Error del servidor. Inténtalo de nuevo en un momento.',
 };
 
+/**
+ * Un codigo sin traducir se enseña TAL CUAL entre parentesis. Antes caia en un
+ * «no se pudo completar la operación» que no decia nada: ni al usuario, que no
+ * sabe que hacer, ni a quien tiene que arreglarlo, que no sabe por donde
+ * empezar. Feo es mejor que mudo.
+ */
+
 export function explicar(codigo: string): string {
-  return MOTIVOS[codigo] || 'No se pudo completar la operación.';
+  if (MOTIVOS[codigo]) return MOTIVOS[codigo];
+  return codigo
+    ? `No se pudo completar la operación (${codigo}).`
+    : 'No se pudo completar la operación.';
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CreditCard, DollarSign, AlertTriangle, TrendingUp, List, Calendar, GanttChartSquare, Copy } from 'lucide-react';
+import { CreditCard, DollarSign, Euro, Banknote, AlertTriangle, TrendingUp, List, Calendar, GanttChartSquare, Copy } from 'lucide-react';
 import { Transaction, DetectedSubscription, RecurringTransaction } from '../../types';
 import { collectSubscriptions, getSubscriptionStats } from '../../utils/subscriptionDetector';
 import { parseDateOnly } from '../../utils/stableDate';
@@ -117,7 +117,7 @@ export function SubscriptionsView({ transactions, recurring, currency, dismissed
           value={String(stats.withAlerts)}
           iconColor={stats.withAlerts > 0 ? 'var(--danger)' : 'var(--success)'}
         />
-        <KpiBox ancho icon={<DollarSign size={20} />} label="Total mensual" value={formatCurrency(stats.monthlyTotal, currency)} iconColor="var(--danger)" />
+        <KpiBox ancho icon={<IconoMoneda moneda={currency} />} label="Total mensual" value={formatCurrency(stats.monthlyTotal, currency)} iconColor="var(--danger)" />
         <KpiBox ancho icon={<TrendingUp size={20} />} label="Costo anual est." value={formatCurrency(stats.annualTotal, currency)} iconColor="var(--warning)" />
       </div>
 
@@ -343,6 +343,17 @@ function KpiBox({ icon, label, value, iconColor, ancho }: {
       </div>
     </div>
   );
+}
+
+/**
+ * El icono del total sigue a la moneda del hogar: un simbolo de dolar sobre una
+ * cifra en euros es una contradiccion pequeña pero visible. Para soles no hay
+ * simbolo en el juego de iconos, asi que va un billete, que no promete moneda.
+ */
+function IconoMoneda({ moneda }: { moneda: string }) {
+  if (moneda === 'USD') return <DollarSign size={20} />;
+  if (moneda === 'EUR') return <Euro size={20} />;
+  return <Banknote size={20} />;
 }
 
 function ViewToggleBtn({ icon, label, active, onClick }: {

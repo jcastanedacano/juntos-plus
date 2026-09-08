@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react
 import './App.css';
 import { useIsAuthenticated } from '@azure/msal-react';
 import { Transaction, SavingsGoal, Budget, RecurringTransaction, Account, DetectedSubscription, CreditStatementHistoryEntry, Investment } from './types';
-import { getFxRates, refreshFxRates } from './utils/fx';
+import { getFxRates, refreshFxRates, fijarMonedaBase } from './utils/fx';
 import { getMyOwnerRole } from './utils/userIdentity';
 import { storageAPI as storage } from './utils/storage';
 import { getLastLoadError } from './utils/storageAPI';
@@ -24,6 +24,8 @@ import { Sidebar } from './components/Sidebar';
 import type { ViewType } from './components/Sidebar';
 import { Header, PeriodFilter } from './components/Header';
 import { LoginPage } from './components/LoginPage';
+import { AltaHogar } from './components/AltaHogar';
+import { consultarHogar, EstadoHogar } from './utils/hogar';
 import { useToast } from './components/ui/Toast';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -85,6 +87,13 @@ const viewTitles: Record<ViewType, string> = {
 
 function App() {
   const isAuthenticated = useIsAuthenticated();
+  // null mientras se pregunta; sin hogarId, toca el alta antes de la aplicacion.
+  const [hogar, setHogar] = useState<EstadoHogar | null>(null);
+  // «Estoy dentro» no es lo mismo que «MSAL me conoce»: quien entra con Google
+  // no tiene cuenta en MSAL, y su identidad la confirma el servidor. Colgar los
+  // efectos de isAuthenticated dejaba a esos usuarios con la aplicacion abierta
+  // y sin cargar NADA: todo a cero, y la moneda en su valor por defecto.
+  const dentro = isAuthenticated || Boolean(hogar?.autenticado);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [currency, setCurrency] = useState('PEN');
@@ -377,6 +386,9 @@ function App() {
 
       setTransactions(txsAfterEchoClean);
       setCurrency(loadedCurrency);
+      // Las tasas se guardan ancladas a soles y se derivan a la moneda del
+      // hogar. Sin esto, un hogar en euros veria «1 USD = 3,50 €».
+      fijarMonedaBase(loadedCurrency);
       setGoals(goalsWithDefaults);
       setBudgets(loadedBudgets);
       setRecurring(recAfterRetro);
@@ -417,12 +429,26 @@ function App() {
     }
   }, [addToast]);
 
-  // Load data only when authenticated
-  useEffect(() => { if (isAuthenticated) loadData(); }, [loadData, isAuthenticated]);
+  // Los datos son del hogar, no del usuario. Mientras no se sepa cual es, no se
+  // piden: el servidor responderia 409 y saldria un error donde en realidad
+  // falta un paso de alta.
+  // Se pregunta SIEMPRE, no solo con sesion de Microsoft: quien entra por
+  // Google no tiene cuenta en MSAL, y su identidad viaja en la cookie. El
+  // servidor es el unico que sabe si reconoce a quien pregunta.
+  useEffect(() => {
+    let vigente = true;
+    consultarHogar().then(e => { if (vigente) setHogar(e); });
+    return () => { vigente = false; };
+  }, [isAuthenticated]);
+
+  // Load data only when authenticated and the household is known
+  useEffect(() => {
+    if (dentro && hogar?.hogarId) loadData();
+  }, [loadData, dentro, hogar?.hogarId]);
 
   // Tipo de cambio: se refresca al entrar, como mucho cada 6 horas y solo si
   // no hay una tasa fijada a mano. Falla en silencio a proposito.
-  useEffect(() => { if (isAuthenticated) refreshFxRates().catch(() => {}); }, [isAuthenticated]);
+  useEffect(() => { if (dentro) refreshFxRates().catch(() => {}); }, [dentro]);
 
   // Auto-reload every day at 12:00 PM
   useEffect(() => {
@@ -453,7 +479,7 @@ function App() {
   // refresh or a hard reload. Only reloads when the version actually moved —
   // the endpoint is cheap, but re-fetching the whole dataset isn't.
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!dentro) return;
     let knownVersion: number | null = null;
     let cancelled = false;
 
@@ -481,7 +507,7 @@ function App() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [isAuthenticated, loadData, addToast]);
+  }, [dentro, loadData, addToast]);
 
   // Auto-update to current month if user is on "current month" mode
   useEffect(() => {
@@ -1404,6 +1430,7 @@ function App() {
 
       {currentView === 'settings' && (
         <MobileSettingsView
+          correoSesion={hogar?.correo}
           onViewChange={setCurrentView}
           onExport={handleExport}
           onOpenSettings={() => setShowCategoryManager(true)}
@@ -1473,8 +1500,52 @@ function App() {
     </Suspense>
   );
 
-  if (!isAuthenticated) {
+  // Todavia preguntando quien es. Un parpadeo del login a quien ya tiene sesion
+  // seria peor que esperar un momento en blanco.
+  if (hogar === null) {
+    return <div className="app-cargando" aria-busy="true" />;
+  }
+
+  // Ni token de Microsoft ni cookie de Google: no hay a quien enseñarle nada.
+  if (!dentro) {
     return <LoginPage />;
+  }
+
+  // El servidor no contesta. Ofrecer «crea tu hogar» aqui seria mandar al
+  // usuario a una peticion que tampoco va a funcionar, y dejarle pensando que
+  // el error es suyo.
+  if (hogar.problema) {
+    return (
+      <div className="login-page">
+        <div className="login-bg-pattern" />
+        <div className="login-container">
+          <div className="login-card">
+            <div className="login-logo">
+              <span className="login-brand-mark" aria-hidden="true">J</span>
+              <h1 className="login-app-name">Juntos<span className="login-plus">+1</span></h1>
+              <p className="login-subtitle">No pudimos hablar con el servidor</p>
+            </div>
+            <p className="login-nota">
+              Tus datos están a salvo: esto es un problema de conexión, no tuyo.
+            </p>
+            <button className="login-btn" onClick={() => window.location.reload()}>
+              <span>Reintentar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hogar.hogarId) {
+    return (
+      <AltaHogar
+        estado={hogar}
+        // Recarga completa a proposito: storageAPI cachea los datos en el
+        // modulo, y tras estrenar o unirse a un hogar ese cache es de otro.
+        onListo={() => window.location.reload()}
+      />
+    );
   }
 
   return (
@@ -1538,6 +1609,7 @@ function App() {
 
             <div className={`app-main ${sidebarCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`}>
               <Header
+                correoSesion={hogar?.correo}
                 title={viewTitles[currentView]}
                 periodFilter={periodFilter}
                 onPeriodChange={setPeriodFilter}

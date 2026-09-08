@@ -66,6 +66,10 @@ jobs:
         env:
           VITE_AZURE_CLIENT_ID: ${{ vars.VITE_AZURE_CLIENT_ID }}
           VITE_AZURE_TENANT_ID: ${{ vars.VITE_AZURE_TENANT_ID }}
+          # Opcional: sin esto en "true" el boton de Google no se compila y la
+          # aplicacion queda como estaba. Se enciende cuando el directorio ya
+          # tiene el auto-registro configurado, no antes.
+          VITE_GOOGLE_ACTIVO: ${{ vars.VITE_GOOGLE_ACTIVO }}
         run: |
           test -n "$VITE_AZURE_CLIENT_ID" || { echo "Falta la variable VITE_AZURE_CLIENT_ID"; exit 1; }
           test -n "$VITE_AZURE_TENANT_ID" || { echo "Falta la variable VITE_AZURE_TENANT_ID"; exit 1; }
@@ -85,7 +89,11 @@ jobs:
         # no de rangos que podrian resolver distinto alla.
         run: |
           mkdir -p package
-          cp server.cjs package/
+          # Todos los .cjs de la raiz, no solo server.cjs: el dia que se partio
+          # el modulo de Google en su propio archivo, copiar uno a uno habria
+          # desplegado un servidor que no arranca --MODULE_NOT_FOUND-- y el
+          # health check lo habria descubierto ya en produccion.
+          cp *.cjs package/
           cp -r dist package/dist
           node -e "
             const deps = ['express','cors','compression','jsonwebtoken','jwks-rsa','dotenv','web-push'];

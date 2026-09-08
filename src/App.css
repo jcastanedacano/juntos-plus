@@ -5335,3 +5335,359 @@ body {
     padding: 1rem var(--gap-sm);
   }
 }
+
+/* Segundo camino de entrada: el tenant externo. Se distingue del principal
+   por peso, no por color, porque no es una accion distinta sino la misma
+   puerta con otra llave. */
+.login-sep {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.9rem 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.login-sep::before,
+.login-sep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+/* Con `.login-page` delante a proposito: la regla del boton principal ya lleva
+   dos clases, y sin igualar esa especificidad el degradado azul se comia el
+   fondo de estos y los tres botones salian identicos. */
+.login-page .login-btn-alt {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.login-page .login-btn-alt:hover {
+  border-color: var(--accent-blue);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Google se presenta como Google: fondo blanco y su marca. Cualquier otra cosa
+   le resta credibilidad justo donde el usuario decide si confia. */
+.login-page .login-btn-google {
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid #dadce0;
+  box-shadow: none;
+}
+
+.login-page .login-btn-google:hover {
+  background: #f7f8f8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.login-page .login-btn-google + .login-btn-alt {
+  margin-top: 0.6rem;
+}
+
+/* La pantalla de entrada y la de alta son SIEMPRE oscuras, tambien en movil.
+   Pero en movil la capa Classical redefine los tokens del tema a su paleta
+   clara --texto #201f1d, acento dorado-- y aqui eso pintaba texto casi negro
+   sobre fondo casi negro: la moneda elegida era ilegible.
+
+   Asi que esta superficie no consume esos tokens: define los suyos. Depender
+   de variables que cambian de significado segun el ancho de pantalla es lo que
+   rompio la pantalla, no un color mal elegido. */
+.login-page {
+  --lp-texto: #e8ecf1;
+  --lp-texto-sec: rgba(232, 236, 241, 0.74);
+  --lp-texto-mudo: rgba(232, 236, 241, 0.52);
+  --lp-borde: rgba(255, 255, 255, 0.16);
+  --lp-acento: #6c8eef;
+}
+
+/* Alta de hogar. Reutiliza la tarjeta del login a proposito: es la misma
+   antesala, y cambiar de lenguaje visual a mitad del registro desorienta. */
+.app-cargando {
+  min-height: 100vh;
+  background: var(--bg-primary, #12141a);
+}
+
+/* Alineado a la izquierda: es un parrafo que se lee, no un rotulo. Centrado
+   heredaba la caja del login y cada linea empezaba en un sitio distinto. */
+.alta-invitacion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 0.25rem;
+  border: 1px solid var(--lp-borde);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  text-align: left;
+}
+
+.alta-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--lp-acento);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.alta-invitacion p {
+  margin: 0;
+  color: var(--lp-texto-sec);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.alta-invitacion strong {
+  color: var(--lp-texto);
+  font-weight: 600;
+}
+
+.alta-botones {
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* Padding propio y sin partir palabras: con el del boton principal, «Ahora no»
+   caia a dos lineas al lado de «Unirme» y la pareja quedaba descuadrada. */
+.alta-botones .login-btn {
+  flex: 1;
+  padding-inline: 0.75rem;
+  white-space: nowrap;
+}
+
+.alta-campo {
+  display: block;
+  margin: 0 0 0.9rem;
+  text-align: left;
+}
+
+.alta-campo > span {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--lp-texto-mudo);
+  font-size: 0.8rem;
+}
+
+.alta-campo input {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--lp-borde);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--lp-texto);
+  font-size: 1rem;
+}
+
+.alta-campo input:focus-visible {
+  outline: 2px solid var(--lp-acento);
+  outline-offset: 1px;
+}
+
+/* Tres opciones, las tres a la vista: con un desplegable habria que abrirlo
+   para saber que existen otras monedas. */
+.alta-monedas {
+  border: 0;
+  padding: 0;
+  margin: 0 0 0.9rem;
+}
+
+.alta-monedas legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+  color: var(--lp-texto-mudo);
+  font-size: 0.8rem;
+}
+
+.alta-monedas-fila {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.alta-moneda {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0.6rem 0.25rem;
+  border: 1px solid var(--lp-borde);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--lp-texto-sec);
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.alta-moneda:hover {
+  border-color: var(--lp-acento);
+}
+
+.alta-moneda:focus-visible {
+  outline: 2px solid var(--lp-acento);
+  outline-offset: 1px;
+}
+
+/* La elegida se distingue por borde y color, no por relleno: un boton macizo
+   entre dos huecos parece pulsado, no seleccionado. */
+.alta-moneda.es-elegida {
+  border-color: var(--lp-acento);
+  background: rgba(108, 142, 239, 0.24);
+  color: #fff;
+}
+
+.alta-moneda-simbolo {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.alta-moneda-nombre {
+  font-size: 0.7rem;
+}
+
+.alta-error {
+  margin: 0.75rem 0 0;
+  color: #ff8f8f;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.login-nota {
+  margin: 0.6rem 0 0;
+  text-align: center;
+  color: var(--lp-texto-mudo);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.login-nota + .login-registro {
+  margin-top: 0.5rem;
+}
+
+.login-registro {
+  margin: 0.9rem 0 0;
+  text-align: center;
+  color: var(--lp-texto-mudo);
+  font-size: 0.8rem;
+}
+
+.login-enlace {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--lp-acento);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.login-enlace:hover {
+  color: #fff;
+}
+
+/* Miembro confirmado del hogar. No es un campo: no hay nada que escribir. */
+.hogar-miembro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.hogar-miembro svg {
+  color: var(--accent-green, #4ade80);
+  flex-shrink: 0;
+}
+
+/* ─── Suscripciones en escritorio ────────────────────────────────────
+   Los filtros y el conmutador de vista usan clases cl-* de la capa movil, y
+   TODAS esas reglas cuelgan de .is-mobile. En escritorio esa clase no esta, asi
+   que los botones salian con el estilo por defecto del navegador: fondo blanco
+   sobre una interfaz oscura. Aqui van sus estilos de escritorio, acotados con
+   :not(.is-mobile) para que las dos capas no se pisen nunca. */
+html:not(.is-mobile) .subs-filters .cl-chip {
+  flex-shrink: 0;
+  padding: 6px 13px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+html:not(.is-mobile) .subs-filters .cl-chip:hover {
+  border-color: var(--accent-blue);
+  color: var(--text-primary);
+}
+
+/* El activo se marca con borde y color, no con relleno macizo: en una fila de
+   cinco, uno relleno parece pulsado y no seleccionado. */
+html:not(.is-mobile) .subs-filters .cl-chip[aria-pressed='true'] {
+  border-color: var(--accent-blue);
+  background: rgba(108, 142, 239, 0.12);
+  color: var(--text-primary);
+}
+
+html:not(.is-mobile) .subs-filters .cl-chip:focus-visible,
+html:not(.is-mobile) .subs-viewtoggle-btn:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 1px;
+}
+
+html:not(.is-mobile) .subs-viewtoggle {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+html:not(.is-mobile) .subs-viewtoggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.4rem 0.7rem;
+  border: 0;
+  border-left: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+html:not(.is-mobile) .subs-viewtoggle-btn:first-child {
+  border-left: 0;
+}
+
+html:not(.is-mobile) .subs-viewtoggle-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+html:not(.is-mobile) .subs-viewtoggle-btn[aria-selected='true'] {
+  background: rgba(108, 142, 239, 0.15);
+  color: var(--text-primary);
+}

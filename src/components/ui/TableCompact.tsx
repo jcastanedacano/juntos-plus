@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { localeActual } from '../../utils/fxTasas';
 
 interface Column<T> {
   key: keyof T | string;
@@ -82,7 +83,7 @@ export function TransactionRow({
   onClick
 }: TransactionRowProps) {
   const symbol = currency === 'PEN' ? 'S/' : currency === 'USD' ? '$' : '€';
-  const formattedAmount = `${type === 'income' ? '+' : '-'}${symbol} ${Math.abs(amount).toLocaleString('es-PE', {
+  const formattedAmount = `${type === 'income' ? '+' : '-'}${symbol} ${Math.abs(amount).toLocaleString(localeActual(), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;

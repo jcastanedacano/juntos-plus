@@ -3,6 +3,7 @@ import { addDays, format, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DetectedSubscription } from '../../types';
 import { getUpcomingChargesIn30Days, UpcomingCharge } from '../../utils/subscriptionDetector';
+import { localeActual } from '../../utils/fxTasas';
 
 interface SubscriptionCalendarProps {
   subscriptions: DetectedSubscription[];
@@ -55,7 +56,7 @@ export function SubscriptionCalendar({ subscriptions, currency, onSelectSubscrip
           <span className="sub-cal-stat-label">cobros esperados</span>
         </div>
         <div className="sub-cal-stat">
-          <span className="sub-cal-stat-value">{s}{totalIn30.toLocaleString('es-PE', { maximumFractionDigits: 0 })}</span>
+          <span className="sub-cal-stat-value">{s}{totalIn30.toLocaleString(localeActual(), { maximumFractionDigits: 0 })}</span>
           <span className="sub-cal-stat-label">total próximos 30d</span>
         </div>
         <div className="sub-cal-stat">
@@ -102,7 +103,7 @@ export function SubscriptionCalendar({ subscriptions, currency, onSelectSubscrip
                     <span className="sub-cal-chip-more">+{dayCharges.length - 2}</span>
                   )}
                   <div className="sub-cal-day-total">
-                    -{s}{dayTotal.toLocaleString('es-PE', { maximumFractionDigits: 0 })}
+                    -{s}{dayTotal.toLocaleString(localeActual(), { maximumFractionDigits: 0 })}
                   </div>
                 </div>
               )}
@@ -133,7 +134,7 @@ export function SubscriptionCalendar({ subscriptions, currency, onSelectSubscrip
                   {daysUntil === 0 ? 'Hoy' : daysUntil === 1 ? 'Mañana' : `En ${daysUntil}d`}
                 </span>
               </div>
-              <span className="sub-cal-list-amount">-{s}{charge.amount.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+              <span className="sub-cal-list-amount">-{s}{charge.amount.toLocaleString(localeActual(), { minimumFractionDigits: 2 })}</span>
             </button>
           );
         })}

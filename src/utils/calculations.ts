@@ -1,6 +1,7 @@
 import { Transaction, Statistics, RecurringTransaction, Budget, SavingsGoal } from '../types';
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, differenceInMonths, isWithinInterval, subMonths, addDays, subDays, startOfDay, getDaysInMonth } from 'date-fns';
 import { parseDateOnly, toDateInputValue } from './stableDate';
+import { localeActual } from './fxTasas';
 
 export const calculateStatistics = (transactions: Transaction[], month?: Date): Statistics => {
   // Si se proporciona un mes, filtrar transacciones de ese mes
@@ -73,7 +74,7 @@ const calculateTrend = (transactions: Transaction[], month?: Date) => {
 // monedas soportadas. Antes cada moneda tenía su propio camino (PEN/USD sin
 // separador de miles, EUR vía Intl) — eso producía "S/2,220" al lado de
 // "S/ 2075.65" en la misma pantalla. Un solo formateador para todo el app.
-const GROUPED_NUMBER = new Intl.NumberFormat('es-PE', {
+const GROUPED_NUMBER = new Intl.NumberFormat(localeActual(), {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -95,7 +96,7 @@ export const formatCurrency = (amount: number, currency: string = 'EUR'): string
 // suscripciones) donde mostrar centavos es ruido. Mismo símbolo + espacio +
 // separador de miles que formatCurrency, para que el resto de la pantalla
 // no cambie de "acento" al lado de un monto exacto.
-const GROUPED_NUMBER_COMPACT = new Intl.NumberFormat('es-PE', {
+const GROUPED_NUMBER_COMPACT = new Intl.NumberFormat(localeActual(), {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
 });

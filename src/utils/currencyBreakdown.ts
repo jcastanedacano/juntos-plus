@@ -1,4 +1,5 @@
 import { Transaction, CurrencyType } from '../types';
+import { getMonedaBase } from './fxTasas';
 
 export interface CurrencyBucket {
   currency: CurrencyType;
@@ -9,10 +10,15 @@ export interface CurrencyBucket {
 }
 
 const CURRENCY_ORDER: CurrencyType[] = ['PEN', 'USD', 'EUR'];
-export const DOMINANT_CURRENCY: CurrencyType = 'PEN';
 
+/**
+ * Un movimiento sin moneda esta en la del hogar. Estaba fijo en soles, y como
+ * la hoja de registrar un gasto guarda sin moneda --que es el caso normal-- un
+ * hogar en euros veia todos sus gastos agrupados como soles y anunciados como
+ * «convertidos al tipo de cambio», con su simbolo y todo.
+ */
 const currencyOf = (t: Transaction): CurrencyType =>
-  (t.currency as CurrencyType) || DOMINANT_CURRENCY;
+  (t.currency as CurrencyType) || getMonedaBase();
 
 /**
  * Split a list of transactions into per-currency aggregates. Caller decides

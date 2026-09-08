@@ -4,22 +4,11 @@ import { tokenOpcional } from '../auth/getToken';
 import { getAPIUrl } from './storageAPI';
 
 export type { FxRates } from './fxTasas';
-export { DEFAULT_FX_RATES, simboloDe, relativas, aPen } from './fxTasas';
-import { FxRates, DEFAULT_FX_RATES, relativas, aPen } from './fxTasas';
-
-/**
- * La moneda del hogar. La fija App al cargar los datos; hasta entonces, soles,
- * que es lo que ya usaban los hogares existentes.
- */
-let monedaBase: CurrencyType = 'PEN';
-
-export function fijarMonedaBase(c: string | undefined): void {
-  if (c === 'PEN' || c === 'USD' || c === 'EUR') monedaBase = c;
-}
-
-export function getMonedaBase(): CurrencyType {
-  return monedaBase;
-}
+export {
+  DEFAULT_FX_RATES, simboloDe, relativas, aPen,
+  localeDe, localeActual, fijarMonedaBase, getMonedaBase,
+} from './fxTasas';
+import { FxRates, DEFAULT_FX_RATES, relativas, aPen, getMonedaBase } from './fxTasas';
 
 const STORAGE_KEY = 'juntos:fxRates';
 const CHANGE_EVENT = 'juntos:fxRates:change';
@@ -64,12 +53,12 @@ export function getFxEnPen(): FxRates {
 
 /** Las tasas en la moneda del hogar, que es lo que la interfaz debe enseñar. */
 export function getFxRates(): FxRates {
-  return relativas(readFromStorage(), monedaBase);
+  return relativas(readFromStorage(), getMonedaBase());
 }
 
 /** Recibe lo que el usuario escribio --en la moneda del hogar-- y lo ancla. */
 export function setFxRates(rates: Partial<FxRates>): void {
-  const enBase = { ...getFxRates(), ...rates, [monedaBase]: 1 } as FxRates;
+  const enBase = { ...getFxRates(), ...rates, [getMonedaBase()]: 1 } as FxRates;
   const merged = aPen(enBase);
   // Editar a mano marca el override: a partir de aca la actualizacion
   // automatica deja de pisar el valor hasta que se vuelva a activar.
@@ -132,7 +121,7 @@ export async function refreshFxRates(force = false): Promise<FxRates> {
 /** Convierte un importe a la moneda del hogar. */
 export function toBase(amount: number, currency: CurrencyType | undefined, rates?: FxRates): number {
   const r = rates || getFxRates();
-  const c = (currency || monedaBase) as CurrencyType;
+  const c = (currency || getMonedaBase()) as CurrencyType;
   const rate = r[c] || 1;
   return amount * rate;
 }
@@ -152,8 +141,8 @@ export function txBaseAmount(tx: Pick<Transaction, 'amount' | 'currency'>, rates
 export function projectToBase(transactions: Transaction[], rates?: FxRates): Transaction[] {
   const r = rates || getFxRates();
   return transactions.map(t => {
-    if (!t.currency || t.currency === monedaBase) return t;
-    return { ...t, amount: txBaseAmount(t, r), currency: monedaBase as CurrencyType };
+    if (!t.currency || t.currency === getMonedaBase()) return t;
+    return { ...t, amount: txBaseAmount(t, r), currency: getMonedaBase() as CurrencyType };
   });
 }
 

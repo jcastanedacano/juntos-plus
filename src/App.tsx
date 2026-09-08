@@ -35,6 +35,8 @@ import { NotificationSettings } from './components/settings/NotificationSettings
 import type { HomeSection } from './components/mobile/MobileHomeView';
 import { OwnerLabelsModal } from './components/settings/OwnerLabelsModal';
 import { isSameMonth } from 'date-fns';
+import { localeActual } from './utils/fxTasas';
+import { simboloDe, getMonedaBase } from './utils/fxTasas';
 
 // Lazy load view components
 const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -602,7 +604,7 @@ function App() {
         .toLocaleDateString('es-PE', { day: '2-digit', month: 'short' });
       const priceChanged = match?.priceChanged === true;
       const priceNote = priceChanged
-        ? ` Precio actualizado: S/ ${match!.oldAmount.toFixed(2)} → S/ ${transaction.amount.toFixed(2)}.`
+        ? ` Precio actualizado: ${simboloDe(getMonedaBase())} ${match!.oldAmount.toFixed(2)} → ${simboloDe(getMonedaBase())} ${transaction.amount.toFixed(2)}.`
         : '';
       addToast({
         type: 'success',
@@ -1300,12 +1302,12 @@ function App() {
                 type: 'success',
                 message: historical
                   ? `Ajuste histórico registrado en mes anterior (no afecta Disponible Real de este mes).`
-                  : `Transacción de ajuste registrada (${isExpense ? 'gasto' : 'ingreso'} S/ ${txAmount.toFixed(2)} este mes).`,
+                  : `Transacción de ajuste registrada (${isExpense ? 'gasto' : 'ingreso'} ${simboloDe(getMonedaBase())} ${txAmount.toFixed(2)} este mes).`,
                 duration: 4000,
               });
             };
 
-            const amountLabel = `S/ ${txAmount.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const amountLabel = `${simboloDe(getMonedaBase())} ${txAmount.toLocaleString(localeActual(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             addToast({
               type: 'success',
               message: `Saldo de ${target.name} actualizado · diferencia ${amountLabel}. ¿Cómo registrarla?`,
@@ -1729,8 +1731,8 @@ function App() {
                 const totalExpense = newTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
                 const totalIncome = newTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
                 const parts: string[] = [];
-                if (totalExpense > 0) parts.push(`S/ ${totalExpense.toFixed(2)} gasto`);
-                if (totalIncome > 0) parts.push(`S/ ${totalIncome.toFixed(2)} ingreso`);
+                if (totalExpense > 0) parts.push(`${simboloDe(getMonedaBase())} ${totalExpense.toFixed(2)} gasto`);
+                if (totalIncome > 0) parts.push(`${simboloDe(getMonedaBase())} ${totalIncome.toFixed(2)} ingreso`);
                 addToast({
                   type: 'success',
                   message: `Reconciliación: ${rows.length} cuenta${rows.length === 1 ? '' : 's'} ajustada${rows.length === 1 ? '' : 's'} (${parts.join(' · ')}).`,

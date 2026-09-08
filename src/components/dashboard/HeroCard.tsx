@@ -5,6 +5,7 @@ import { getCurrencyBreakdown } from '../../utils/currencyBreakdown';
 import { useFxRates } from '../../utils/fx';
 import { startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { parseDateOnly } from '../../utils/stableDate';
+import { localeActual } from '../../utils/fxTasas';
 
 interface HeroCardProps {
   disponibleReal: DisponibleRealBreakdown;
@@ -27,7 +28,7 @@ const splitAmount = (amount: number): { integer: string; cents: string; sign: st
   const abs = Math.abs(amount);
   const fixed = abs.toFixed(2);
   const [intPart, centsPart] = fixed.split('.');
-  const intFormatted = parseInt(intPart, 10).toLocaleString('es-PE');
+  const intFormatted = parseInt(intPart, 10).toLocaleString(localeActual());
   return { integer: intFormatted, cents: `.${centsPart}`, sign };
 };
 
@@ -65,6 +66,9 @@ export function HeroCard({
     return getCurrencyBreakdown(monthTx).filter(b => b.currency !== currency);
   }, [allTransactions, ref, currency]);
   const sym = currencySymbol(currency);
+  /** Una tasa tambien es un numero de la casa: 0,86 en euros, 0.86 en soles. */
+  const tasa = (n: number) =>
+    n.toLocaleString(localeActual(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   // Use disponibleAjustado (= disponibleReal − variableEjecutado) so the
   // hero number reacts when the user records an expense. The label
   // "Disponible real · queda este mes" is more truthful with this value
@@ -133,7 +137,7 @@ export function HeroCard({
         </p>
 
         {secondaryBuckets.length > 0 && (
-          <div className="hero-secondary-currency" title="Ya convertido a soles al tipo de cambio configurado">
+          <div className="hero-secondary-currency" title={`Ya convertido a ${currencySymbol(currency)} al tipo de cambio configurado`}>
             <span className="hero-secondary-label">Convertido a TC</span>
             {secondaryBuckets.map(b => {
               const rate = b.currency === 'USD' ? fxRates.USD : b.currency === 'EUR' ? fxRates.EUR : 1;
@@ -146,7 +150,7 @@ export function HeroCard({
                       {formatCurrency(b.income, b.currency)} ingreso
                     </>
                   )}
-                  {' '}<span style={{ opacity: 0.6 }}>· TC {rate.toFixed(2)}</span>
+                  {' '}<span style={{ opacity: 0.6 }}>· TC {tasa(rate)}</span>
                 </span>
               );
             })}
@@ -188,11 +192,11 @@ export function HeroCard({
           <h3>Ritmo del mes</h3>
           <span
             className="hero-fx-chip"
-            title={`Tipo de cambio · USD ${fxRates.USD.toFixed(2)} · EUR ${fxRates.EUR.toFixed(2)} (editable en Pareja)`}
+            title={`Tipo de cambio · USD ${tasa(fxRates.USD)} · EUR ${tasa(fxRates.EUR)} (editable en Pareja)`}
           >
             {/* El simbolo sale de la moneda del hogar, no fijo: con la tasa ya
                 convertida, un «S/» aqui contaba euros llamandolos soles. */}
-            TC <strong>{currencySymbol(currency)} {fxRates.USD.toFixed(2)}</strong> / USD
+            TC <strong>{currencySymbol(currency)} {tasa(fxRates.USD)}</strong> / USD
           </span>
         </div>
         <div>

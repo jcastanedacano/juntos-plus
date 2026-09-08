@@ -1,5 +1,6 @@
 import { LucideIcon, ChevronUp, ChevronDown, Minus } from 'lucide-react';
 import { Sparkline } from './Sparkline';
+import { localeActual } from '../../utils/fxTasas';
 
 interface KpiCardProps {
   icon: LucideIcon;
@@ -39,7 +40,7 @@ export function KpiCard({
     if (!formatAsCurrency) {
       return <>{val.toFixed(1)}<span className="kpi-currency">%</span></>;
     }
-    const formatted = val.toLocaleString('es-PE', {
+    const formatted = val.toLocaleString(localeActual(), {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });

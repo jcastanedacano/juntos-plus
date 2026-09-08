@@ -28,6 +28,8 @@ import { buildCreditAdvice, rankInstallments, CreditAdvice, AdviceSeverity } fro
 import { formatCurrency } from '../utils/calculations';
 import { useFxRates } from '../utils/fx';
 import { parseDateOnly } from '../utils/stableDate';
+import { localeActual } from '../utils/fxTasas';
+import { simboloDe, getMonedaBase } from '../utils/fxTasas';
 
 interface CreditCardViewProps {
   accounts: Account[];
@@ -839,7 +841,7 @@ function UtilizationGoalBar({ snapshot }: { snapshot: ReturnType<typeof computeC
         <span className="credit-goal-bar-label">Progreso hacia la meta (&lt; 30%)</span>
         <span className="credit-goal-bar-stat">
           {currentPct.toFixed(1)}%
-          {reached ? ' · ¡meta alcanzada!' : ` · faltan S/ ${Math.round(toGoal).toLocaleString('es-PE')}`}
+          {reached ? ' · ¡meta alcanzada!' : ` · faltan ${simboloDe(getMonedaBase())} ${Math.round(toGoal).toLocaleString(localeActual())}`}
         </span>
       </div>
       <div className="credit-goal-bar-track">

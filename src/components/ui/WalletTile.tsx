@@ -1,4 +1,5 @@
 import { Account, CurrencyType } from '../../types';
+import { localeActual } from '../../utils/fxTasas';
 
 interface WalletTileProps {
   account: Account;
@@ -22,7 +23,7 @@ const currencySymbols: Record<string, string> = {
 export function WalletTile({ account, currency = 'PEN', onClick, isActive }: WalletTileProps) {
   const formatBalance = (balance: number) => {
     const symbol = currencySymbols[currency] || 'S/';
-    return `${symbol} ${balance.toLocaleString('es-PE', {
+    return `${symbol} ${balance.toLocaleString(localeActual(), {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     })}`;

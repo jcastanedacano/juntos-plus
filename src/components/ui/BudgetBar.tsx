@@ -1,3 +1,4 @@
+import { localeActual } from '../../utils/fxTasas';
 interface BudgetBarProps {
   category: string;
   categoryIcon: string;
@@ -24,7 +25,7 @@ export function BudgetBar({
   const remaining = limit - used;
 
   const formatAmount = (value: number) => {
-    return `${symbol} ${Math.abs(value).toLocaleString('es-PE', {
+    return `${symbol} ${Math.abs(value).toLocaleString(localeActual(), {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     })}`;

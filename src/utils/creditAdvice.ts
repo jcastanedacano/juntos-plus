@@ -1,6 +1,7 @@
 import { Transaction } from '../types';
 import { CreditSnapshot, teaToMonthly } from './creditCardAnalytics';
 import { parseDateOnly } from './stableDate';
+import { localeActual } from './fxTasas';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -76,7 +77,7 @@ function utilizationAdvice(snapshot: CreditSnapshot): CreditAdvice[] {
       title: 'Utilización crítica',
       body: `Estás usando ${Math.round(utilization * 100)}% de tu línea. Por encima de 70% el banco te ve como cliente riesgoso y baja tu score crediticio.`,
       highlight: `${Math.round(utilization * 100)}%`,
-      action: `Pagá al menos S/ ${Math.round(payToTarget).toLocaleString('es-PE')} para volver a < 30%${daysToClose !== undefined ? ` (antes del cierre en ${daysToClose}d)` : ''}.`,
+      action: `Pagá al menos S/ ${Math.round(payToTarget).toLocaleString(localeActual())} para volver a < 30%${daysToClose !== undefined ? ` (antes del cierre en ${daysToClose}d)` : ''}.`,
     });
   } else if (utilization > UTIL_TARGET) {
     out.push({
@@ -84,8 +85,8 @@ function utilizationAdvice(snapshot: CreditSnapshot): CreditAdvice[] {
       group: 'utilization',
       severity: 'warning',
       title: `Llegá a 30% antes del cierre${daysToClose !== undefined ? ` (en ${daysToClose}d)` : ''}`,
-      body: `Tu utilización reporta al banco el día del cierre. Pagando S/ ${Math.round(payToTarget).toLocaleString('es-PE')} bajás a 30% y mejorás tu perfil crediticio.`,
-      highlight: `S/ ${Math.round(payToTarget).toLocaleString('es-PE')}`,
+      body: `Tu utilización reporta al banco el día del cierre. Pagando S/ ${Math.round(payToTarget).toLocaleString(localeActual())} bajás a 30% y mejorás tu perfil crediticio.`,
+      highlight: `S/ ${Math.round(payToTarget).toLocaleString(localeActual())}`,
       action: closeDay !== undefined
         ? `Día de cierre: ${closeDay} de cada mes.`
         : undefined,
@@ -110,7 +111,7 @@ function utilizationAdvice(snapshot: CreditSnapshot): CreditAdvice[] {
         severity: 'danger',
         title: 'Pago vencido',
         body: `Tu pago venció hace ${Math.abs(daysUntilDue)}d. El banco ya aplicó mora + intereses moratorios sobre el saldo. Pagá al menos el mínimo hoy.`,
-        action: `Mínimo: S/ ${Math.round(snapshot.pagoMinimoPEN).toLocaleString('es-PE')}`,
+        action: `Mínimo: S/ ${Math.round(snapshot.pagoMinimoPEN).toLocaleString(localeActual())}`,
       });
     } else if (daysUntilDue <= 3) {
       out.push({
@@ -119,7 +120,7 @@ function utilizationAdvice(snapshot: CreditSnapshot): CreditAdvice[] {
         severity: 'warning',
         title: `Vence en ${daysUntilDue}d`,
         body: `Pagá al menos el mínimo para evitar mora. Si pagás el total, no te cobran intereses sobre las compras no-cuotas de este ciclo.`,
-        action: `Total: S/ ${Math.round(snapshot.pagoTotalPEN).toLocaleString('es-PE')}`,
+        action: `Total: S/ ${Math.round(snapshot.pagoTotalPEN).toLocaleString(localeActual())}`,
       });
     }
   }
@@ -199,8 +200,8 @@ function installmentAdvice(snapshot: CreditSnapshot): CreditAdvice[] {
     group: 'installments',
     severity: totalCarry > 1000 ? 'warning' : 'info',
     title: `${ranked.length} plan${ranked.length === 1 ? '' : 'es'} en cuotas`,
-    body: `Vas a pagar aprox. S/ ${Math.round(totalCarry).toLocaleString('es-PE')} en intereses si dejás correr todas las cuotas hasta el final.`,
-    highlight: `S/ ${Math.round(totalCarry).toLocaleString('es-PE')}`,
+    body: `Vas a pagar aprox. S/ ${Math.round(totalCarry).toLocaleString(localeActual())} en intereses si dejás correr todas las cuotas hasta el final.`,
+    highlight: `S/ ${Math.round(totalCarry).toLocaleString(localeActual())}`,
   });
 
   if (top.tea > 0.9 && top.remainingInstallments >= 3) {
@@ -209,8 +210,8 @@ function installmentAdvice(snapshot: CreditSnapshot): CreditAdvice[] {
       group: 'installments',
       severity: 'warning',
       title: 'Candidato a cancelar anticipado',
-      body: `${top.description} (TEA ${(top.tea * 100).toFixed(1)}%, ${top.remainingInstallments} cuotas restantes). Cancelar libera ~S/ ${Math.round(top.estimatedSavings).toLocaleString('es-PE')} de intereses.`,
-      highlight: `S/ ${Math.round(top.estimatedSavings).toLocaleString('es-PE')}`,
+      body: `${top.description} (TEA ${(top.tea * 100).toFixed(1)}%, ${top.remainingInstallments} cuotas restantes). Cancelar libera ~S/ ${Math.round(top.estimatedSavings).toLocaleString(localeActual())} de intereses.`,
+      highlight: `S/ ${Math.round(top.estimatedSavings).toLocaleString(localeActual())}`,
       action: 'Pedí el saldo de prepago a tu banco antes de pagar.',
     });
   }
@@ -288,8 +289,8 @@ function forecastAdvice(
     group: 'forecast',
     severity: 'info',
     title: 'Ritmo del ciclo actual',
-    body: `Llevás S/ ${Math.round(spentSoFar).toLocaleString('es-PE')} en ${daysIn}d (S/ ${Math.round(dailyPace).toLocaleString('es-PE')}/día). Si seguís el ritmo, cerrás el ciclo con S/ ${Math.round(projectedBalance).toLocaleString('es-PE')} de saldo.`,
-    highlight: `S/ ${Math.round(projectedBalance).toLocaleString('es-PE')}`,
+    body: `Llevás S/ ${Math.round(spentSoFar).toLocaleString(localeActual())} en ${daysIn}d (S/ ${Math.round(dailyPace).toLocaleString(localeActual())}/día). Si seguís el ritmo, cerrás el ciclo con S/ ${Math.round(projectedBalance).toLocaleString(localeActual())} de saldo.`,
+    highlight: `S/ ${Math.round(projectedBalance).toLocaleString(localeActual())}`,
   });
 
   if (projectedUtil > UTIL_HIGH) {
@@ -300,7 +301,7 @@ function forecastAdvice(
       title: 'Vas camino a superar 70% de utilización',
       body: `Proyección: ${Math.round(projectedUtil * 100)}% al cierre del ciclo. Eso impacta tu score y limita futuras aprobaciones.`,
       highlight: `${Math.round(projectedUtil * 100)}%`,
-      action: `Bajá el ritmo o pagá S/ ${Math.round((projectedBalance - snapshot.creditLimit * UTIL_TARGET)).toLocaleString('es-PE')} antes del cierre.`,
+      action: `Bajá el ritmo o pagá S/ ${Math.round((projectedBalance - snapshot.creditLimit * UTIL_TARGET)).toLocaleString(localeActual())} antes del cierre.`,
     });
   } else if (projectedUtil > UTIL_TARGET) {
     out.push({
@@ -308,7 +309,7 @@ function forecastAdvice(
       group: 'forecast',
       severity: 'warning',
       title: 'Cerrarías por encima de 30%',
-      body: `Proyección de utilización al cierre: ${Math.round(projectedUtil * 100)}%. Para reportar < 30% al banco, pagá S/ ${Math.round((projectedBalance - snapshot.creditLimit * UTIL_TARGET)).toLocaleString('es-PE')} antes del corte.`,
+      body: `Proyección de utilización al cierre: ${Math.round(projectedUtil * 100)}%. Para reportar < 30% al banco, pagá S/ ${Math.round((projectedBalance - snapshot.creditLimit * UTIL_TARGET)).toLocaleString(localeActual())} antes del corte.`,
       highlight: `${Math.round(projectedUtil * 100)}%`,
     });
   }
@@ -321,8 +322,8 @@ function forecastAdvice(
       group: 'forecast',
       severity: 'info',
       title: 'Interés del próximo ciclo (si revolvés)',
-      body: `Con saldo proyectado S/ ${Math.round(projectedBalance).toLocaleString('es-PE')}, si solo pagás el mínimo te cobrarían ~S/ ${Math.round(interestNextCycle).toLocaleString('es-PE')} de interés el próximo ciclo.`,
-      highlight: `S/ ${Math.round(interestNextCycle).toLocaleString('es-PE')}`,
+      body: `Con saldo proyectado S/ ${Math.round(projectedBalance).toLocaleString(localeActual())}, si solo pagás el mínimo te cobrarían ~S/ ${Math.round(interestNextCycle).toLocaleString(localeActual())} de interés el próximo ciclo.`,
+      highlight: `S/ ${Math.round(interestNextCycle).toLocaleString(localeActual())}`,
     });
   }
 

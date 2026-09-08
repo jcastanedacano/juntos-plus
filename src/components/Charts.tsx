@@ -16,6 +16,8 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { parseDateOnly } from '../utils/stableDate';
+import { localeActual } from '../utils/fxTasas';
+import { simboloDe, getMonedaBase } from '../utils/fxTasas';
 
 interface ChartsProps {
   stats: Statistics;
@@ -73,7 +75,7 @@ export const Charts = ({ stats, compact = false }: ChartsProps) => {
                 fontFeatureSettings: "'tnum' on, 'lnum' on",
               }}>
                 <span style={{ fontWeight: 500 }}>{entry.name}</span>
-                <span>S/ {entry.value.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                <span>{simboloDe(getMonedaBase())} {entry.value.toLocaleString(localeActual(), { minimumFractionDigits: 2 })}</span>
               </p>
             ))}
           </div>
@@ -106,7 +108,7 @@ export const Charts = ({ stats, compact = false }: ChartsProps) => {
             fontSize: '0.875rem',
             fontFeatureSettings: "'tnum' on, 'lnum' on",
           }}>
-            S/ {payload[0].value.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+            {simboloDe(getMonedaBase())} {payload[0].value.toLocaleString(localeActual(), { minimumFractionDigits: 2 })}
           </p>
         </div>
       );
@@ -219,7 +221,7 @@ export const Charts = ({ stats, compact = false }: ChartsProps) => {
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `S/${(value / 1000).toFixed(0)}k`}
+                tickFormatter={(value) => `${simboloDe(getMonedaBase())}${(value / 1000).toFixed(0)}k`}
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
               <Legend

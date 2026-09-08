@@ -251,6 +251,7 @@ export function SubscriptionsView({ transactions, recurring, currency, dismissed
 // ─── Upcoming list (replaces SubscriptionTimeline in this view) ───────────
 
 import { getUpcomingChargesIn30Days } from '../../utils/subscriptionDetector';
+import { localeActual } from '../../utils/fxTasas';
 
 function UpcomingList({ subscriptions, currency }: { subscriptions: DetectedSubscription[]; currency: string }) {
   const s = currency === 'PEN' ? 'S/' : currency === 'USD' ? '$' : '€';
@@ -277,7 +278,7 @@ function UpcomingList({ subscriptions, currency }: { subscriptions: DetectedSubs
           Próximos 30 días
         </h3>
         <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--danger)' }}>
-          -{s}{total30.toLocaleString('es-PE', { maximumFractionDigits: 0 })}
+          -{s}{total30.toLocaleString(localeActual(), { maximumFractionDigits: 0 })}
         </span>
       </div>
 
@@ -317,7 +318,7 @@ function UpcomingList({ subscriptions, currency }: { subscriptions: DetectedSubs
                 </div>
               </div>
               <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--danger)', whiteSpace: 'nowrap' }}>
-                -{s}{charge.amount.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                -{s}{charge.amount.toLocaleString(localeActual(), { minimumFractionDigits: 2 })}
               </span>
             </div>
           );

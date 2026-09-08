@@ -123,6 +123,15 @@ export default defineConfig({
     host: '0.0.0.0',
     strictPort: false,
     allowedHosts: true,
+    // En produccion el mismo Express sirve la aplicacion y la API, asi que todo
+    // es del mismo origen y la cookie de sesion viaja sola. En desarrollo son
+    // dos puertos distintos, y sin este proxy el navegador trataría la cookie
+    // como de terceros y no la mandaria: entrar con Google parecería funcionar
+    // y luego la aplicacion no reconoceria a nadie.
+    proxy: {
+      '/api': 'http://localhost:3007',
+      '/auth': 'http://localhost:3007',
+    },
   },
   preview: {
     port: 3008,

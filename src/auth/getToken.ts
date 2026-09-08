@@ -158,3 +158,22 @@ export async function reconnectInteractive(): Promise<void> {
     redirectInFlight = false;
   }
 }
+
+/**
+ * El token si hay cuenta de Microsoft, y null si no la hay.
+ *
+ * Quien entra con Google no tiene cuenta en MSAL: su identidad viaja en una
+ * cookie de sesion que el navegador adjunta sola. Pedir un token en ese caso
+ * lanza, y ese error acababa presentandose como «no se pudieron cargar tus
+ * datos» cuando en realidad la peticion iba a funcionar sin cabecera.
+ */
+export async function tokenOpcional(): Promise<string | null> {
+  try {
+    if (!msalInstance) return null;
+    const cuenta = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (!cuenta) return null;
+    return await getToken();
+  } catch {
+    return null;
+  }
+}

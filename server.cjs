@@ -7,12 +7,414 @@ const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
 const webpush = require('web-push');
 require('dotenv').config();
+const { montarRutas: montarRutasGoogle, sesionDe, GOOGLE_ACTIVO } = require('./googleAuth.cjs');
 
 const app = express();
 app.use(compression());
 const PORT = process.env.PORT || 3007;
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
+const HOGARES_FILE = path.join(DATA_DIR, 'hogares.json');
+const HOGARES_DIR = path.join(DATA_DIR, 'hogares');
+
+// ─── Hogares ────────────────────────────────────────────────────────
+//
+// Un hogar es dueño de un data.json. Tiene uno o dos miembros, que ven
+// exactamente lo mismo: es lo que hace que la aplicacion sea «Juntos» y no dos
+// cuentas separadas. Aislar por usuario habria partido a la pareja.
+//
+// Al hogar migrado --el que ya tiene los datos-- solo entra quien esta NOMBRADO
+// en MIEMBROS_PRINCIPAL. Cualquier otro estrena el suyo, vacio.
+//
+// Antes esto miraba el emisor del token: quien viniera del directorio de
+// trabajo entraba, porque «ese directorio ES la pareja». Era falso. El
+// directorio de trabajo tiene cientos de cuentas, y lo unico que impedia que
+// entraran era que la aplicacion exige asignacion explicita. En cuanto se abre
+// el registro hay que relajar esa asignacion, y la regla del emisor habria
+// entregado las finanzas de la pareja a cada cuenta nueva.
+//
+// Por eso ahora es una lista de nombres propios y falla cerrada: sin lista,
+// nadie hereda los datos de nadie.
+
+/** Identidad estable del usuario dentro de su directorio. */
+function claveDeUsuario(u) {
+  return String((u && (u.oid || u.sub)) || '').trim();
+}
+
+/**
+ * Quienes son duenos del hogar migrado. Acepta identificadores de objeto o
+ * correos: el oid es estable y el correo es lo que un humano encuentra.
+ */
+const MIEMBROS_PRINCIPAL = (process.env.MIEMBROS_PRINCIPAL || '')
+  .split(',')
+  .map(v => v.trim().toLowerCase())
+  .filter(Boolean);
+
+function esMiembroPrincipal(u) {
+  if (MIEMBROS_PRINCIPAL.length === 0) return false;
+  const clave = claveDeUsuario(u).toLowerCase();
+  const correo = correoDelToken(u);
+  return (Boolean(clave) && MIEMBROS_PRINCIPAL.includes(clave)) ||
+         (Boolean(correo) && MIEMBROS_PRINCIPAL.includes(correo));
+}
+
+async function leerHogares() {
+  try {
+    return JSON.parse(await fs.readFile(HOGARES_FILE, 'utf8'));
+  } catch {
+    return { usuarios: {}, hogares: {} };
+  }
+}
+
+async function guardarHogares(mapa) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(HOGARES_FILE, JSON.stringify(mapa, null, 2));
+}
+
+function archivoDeHogar(id) {
+  return path.join(HOGARES_DIR, id, 'data.json');
+}
+
+/**
+ * Mueve el data.json unico al primer hogar. Se ejecuta una vez y solo si aun
+ * no hay hogares: si algo falla a mitad, el original sigue donde estaba.
+ *
+ * El archivo viejo NO se borra. Es el respaldo de una migracion sobre datos
+ * financieros reales, y ocupa lo que ocupa.
+ */
+async function migrarAHogares() {
+  const mapa = await leerHogares();
+  if (Object.keys(mapa.hogares).length > 0) return mapa;
+
+  let original = null;
+  try {
+    original = await fs.readFile(DATA_FILE, 'utf8');
+    JSON.parse(original); // no migrar un archivo corrupto
+  } catch {
+    return mapa; // instalacion nueva: no hay nada que migrar
+  }
+
+  const id = 'principal';
+  await fs.mkdir(path.join(HOGARES_DIR, id), { recursive: true });
+  await fs.writeFile(archivoDeHogar(id), original);
+
+  // Releer y contar antes de dar la migracion por buena. Un disco lleno o un
+  // corte a mitad de escritura dejan un archivo truncado que parece existir;
+  // sobre datos financieros eso no se asume, se comprueba. Si no cuadra, se
+  // retira la copia y el original sigue siendo el bueno.
+  try {
+    const copia = JSON.parse(await fs.readFile(archivoDeHogar(id), 'utf8'));
+    const antes = (JSON.parse(original).transactions || []).length;
+    const despues = (copia.transactions || []).length;
+    if (antes !== despues) throw new Error(`${antes} transacciones antes, ${despues} despues`);
+    console.log(`[hogares] copia verificada: ${despues} transacciones`);
+  } catch (err) {
+    await fs.rm(path.join(HOGARES_DIR, id), { recursive: true, force: true }).catch(() => {});
+    console.error('[hogares] migracion abortada, el original queda intacto:', err.message);
+    return mapa;
+  }
+
+  mapa.hogares[id] = {
+    nombre: 'Nuestro hogar',
+    creado: new Date().toISOString(),
+    origen: 'migracion',
+  };
+  await guardarHogares(mapa);
+  console.log(`[hogares] migrado data.json -> ${archivoDeHogar(id)} (el original se conserva)`);
+  if (MIEMBROS_PRINCIPAL.length === 0) {
+    // Sin lista nadie puede reclamar estos datos. Es lo correcto --antes que
+    // dejar que los reclame quien llegue-- pero deja a la pareja fuera de lo
+    // suyo, asi que tiene que verse en el arranque.
+    console.warn(
+      '[hogares] MIEMBROS_PRINCIPAL vacio: nadie heredara los datos migrados. ' +
+      'Pon ahi los correos o los oid de las dos cuentas de la pareja.'
+    );
+  }
+  return mapa;
+}
+
+/** El hogar del solicitante, o null si todavia no tiene. */
+async function hogarDe(req) {
+  const clave = claveDeUsuario(req.user);
+  if (!clave) return null;
+
+  const mapa = await leerHogares();
+  // Cada visita deja anotado el correo de quien viene. Es lo que despues
+  // permite que su pareja lo llame por su direccion en vez de por un oid.
+  let cambio = anotarCorreo(mapa, clave, correoDelToken(req.user));
+
+  let id = null;
+  if (mapa.usuarios[clave] && mapa.hogares[mapa.usuarios[clave]]) {
+    id = mapa.usuarios[clave];
+  } else if (esMiembroPrincipal(req.user)) {
+    const principal = Object.keys(mapa.hogares).find(h => mapa.hogares[h].origen === 'migracion');
+    if (principal) {
+      mapa.usuarios[clave] = principal;
+      cambio = true;
+      id = principal;
+      console.log(`[hogares] ${correoDelToken(req.user) || clave} entra a ${principal} por estar nombrado`);
+    }
+  }
+
+  if (cambio) await guardarHogares(mapa);
+  return id;
+}
+
+/** Crea un hogar vacio y mete dentro a quien lo pide. */
+async function crearHogar(req, nombre) {
+  const clave = claveDeUsuario(req.user);
+  if (!clave) return null;
+  const mapa = await leerHogares();
+  const id = 'h_' + Math.random().toString(36).slice(2, 10);
+  await fs.mkdir(path.join(HOGARES_DIR, id), { recursive: true });
+  await fs.writeFile(archivoDeHogar(id), JSON.stringify(EMPTY_DATA, null, 2));
+  mapa.hogares[id] = {
+    nombre: (nombre || '').trim() || 'Mi hogar',
+    creado: new Date().toISOString(),
+    origen: 'alta',
+  };
+  mapa.usuarios[clave] = id;
+  anotarCorreo(mapa, clave, correoDelToken(req.user));
+  await guardarHogares(mapa);
+  return id;
+}
+
+// ─── Llamar a alguien a tu hogar ────────────────────────────────────
+//
+// Quien llega nuevo estrena un hogar vacio y empieza a apuntar lo suyo. Cuando
+// quiere compartirlo, llama a la otra persona POR CORREO, y solo se puede
+// llamar a quien ya entro alguna vez: el token trae un identificador opaco,
+// nadie invita a su pareja escribiendo un oid. De ahi el indice de correos.
+//
+// Y por eso la otra persona tiene que estar antes: al aceptar, lo que ya haya
+// apuntado por su cuenta se consolida en el hogar que la invita.
+
+const MIEMBROS_MAX = 2;
+
+function normalizarCorreo(c) {
+  return String(c || '').trim().toLowerCase();
+}
+
+/**
+ * Apunta que este correo es de esta identidad. Devuelve si hubo cambio, para
+ * no reescribir el mapa en cada peticion.
+ *
+ * Si la misma direccion entra por las dos puertas, gana la ultima: son dos
+ * identidades distintas para el directorio, y la invitacion tiene que ir a la
+ * que esta usando la aplicacion ahora.
+ */
+function anotarCorreo(mapa, clave, correo) {
+  if (!correo) return false;
+  mapa.correos = mapa.correos || {};
+  if (mapa.correos[correo] === clave) return false;
+  mapa.correos[correo] = clave;
+  return true;
+}
+
+function miembrosDe(mapa, hogarId) {
+  return Object.keys(mapa.usuarios).filter(k => mapa.usuarios[k] === hogarId);
+}
+
+function correoDe(mapa, clave) {
+  const correos = mapa.correos || {};
+  return Object.keys(correos).find(c => correos[c] === clave) || null;
+}
+
+/** Guarda la llamada. Los errores son codigos: el cliente explica cada uno. */
+async function invitar(req, correoCrudo) {
+  const clave = claveDeUsuario(req.user);
+  const correo = normalizarCorreo(correoCrudo);
+  if (!clave) return { error: 'sin_identidad' };
+  if (!correo || !correo.includes('@')) return { error: 'correo_invalido' };
+  if (normalizarCorreo(correoDelToken(req.user)) === correo) return { error: 'eres_tu' };
+
+  const mapa = await leerHogares();
+  const hogarId = mapa.usuarios[clave];
+  if (!hogarId || !mapa.hogares[hogarId]) return { error: 'sin_hogar' };
+
+  const miembros = miembrosDe(mapa, hogarId);
+  const claveInvitada = (mapa.correos || {})[correo];
+  // Solo se llama a quien ya tiene cuenta. Guardar la invitacion a ciegas
+  // dejaria a quien invita esperando a alguien que quiza nunca se registre y
+  // sin forma de saberlo; asi el aviso es inmediato y dice que hacer.
+  if (!claveInvitada) return { error: 'sin_cuenta' };
+  // «Ya esta dentro» va antes que «esta lleno»: un hogar de dos siempre esta
+  // lleno, y contestar eso a quien reinvita a su pareja despista en vez de
+  // explicar.
+  if (miembros.includes(claveInvitada)) return { error: 'ya_es_miembro' };
+  if (miembros.length >= MIEMBROS_MAX) return { error: 'hogar_lleno' };
+
+  const hogar = mapa.hogares[hogarId];
+  hogar.invitaciones = (hogar.invitaciones || []).filter(i => i.correo !== correo);
+  hogar.invitaciones.push({ correo, invitadoPor: clave, creada: new Date().toISOString() });
+  await guardarHogares(mapa);
+  console.log(`[hogares] ${hogarId} llama a ${correo}`);
+  return { hogarId, correo };
+}
+
+/** Las invitaciones dirigidas a quien pregunta. */
+async function invitacionesPara(req, mapaDado) {
+  const correo = normalizarCorreo(correoDelToken(req.user));
+  if (!correo) return [];
+  const mapa = mapaDado || await leerHogares();
+  return Object.keys(mapa.hogares)
+    .map(id => {
+      const inv = (mapa.hogares[id].invitaciones || []).find(i => i.correo === correo);
+      return inv ? { hogarId: id, nombre: mapa.hogares[id].nombre, de: correoDe(mapa, inv.invitadoPor), creada: inv.creada } : null;
+    })
+    .filter(Boolean);
+}
+
+// Lo que se une al fusionar. 'users' queda fuera a proposito: es la lista de
+// cuentas locales heredada, con sus contraseñas, y mezclarla cruzaria
+// credenciales de dos personas que solo querian juntar sus gastos.
+const LISTAS_FUSIONABLES = [
+  'transactions', 'accounts', 'budgets', 'goals',
+  'investments', 'recurring', 'autosave', 'dismissedSubscriptions',
+];
+
+/** El id de un elemento; dismissedSubscriptions son ids sueltos, no objetos. */
+function idDe(x) {
+  return x && typeof x === 'object' ? x.id : x;
+}
+
+function unir(a, b) {
+  const salida = a.slice();
+  const vistos = new Set(a.map(idDe).filter(v => v !== undefined));
+  for (const item of b) {
+    const id = idDe(item);
+    // Sin id no hay forma de saber si ya estaba, asi que entra igual: un
+    // movimiento repetido se ve y se borra, uno perdido no se nota.
+    if (id === undefined || !vistos.has(id)) {
+      salida.push(item);
+      if (id !== undefined) vistos.add(id);
+    }
+  }
+  return salida;
+}
+
+/** Une lo del invitado dentro de lo del anfitrion. En choque de id, manda el anfitrion. */
+function fusionarDatos(anfitrion, invitado) {
+  const salida = { ...anfitrion };
+  for (const lista of LISTAS_FUSIONABLES) {
+    salida[lista] = unir(
+      Array.isArray(anfitrion[lista]) ? anfitrion[lista] : [],
+      Array.isArray(invitado[lista]) ? invitado[lista] : []
+    );
+  }
+  return salida;
+}
+
+/**
+ * Vuelca los datos del hogar de origen en el de destino.
+ *
+ * El archivo de origen no se toca: queda como estaba, y es el respaldo de quien
+ * se muda. Antes de escribir el del anfitrion se guarda una copia fechada, y
+ * despues se relee para comprobar que esta TODO lo de los dos. Si falta algo,
+ * se restaura y la fusion no ocurre: es dinero de dos personas y no hay deshacer.
+ */
+async function consolidar(origenId, destinoId) {
+  const archivoDestino = archivoDeHogar(destinoId);
+
+  let origen;
+  try {
+    origen = JSON.parse(await fs.readFile(archivoDeHogar(origenId), 'utf8'));
+  } catch {
+    return { fusionadas: 0 }; // nunca guardo nada: no hay que consolidar nada
+  }
+
+  let destino;
+  try {
+    destino = JSON.parse(await fs.readFile(archivoDestino, 'utf8'));
+  } catch {
+    return { error: 'destino_ilegible' };
+  }
+
+  const unido = fusionarDatos(destino, origen);
+  const respaldo = path.join(HOGARES_DIR, destinoId, `antes-de-fusionar-${Date.now()}.json`);
+  await fs.writeFile(respaldo, JSON.stringify(destino, null, 2));
+  await fs.writeFile(archivoDestino, JSON.stringify(unido, null, 2));
+
+  try {
+    const escrito = JSON.parse(await fs.readFile(archivoDestino, 'utf8'));
+    for (const lista of LISTAS_FUSIONABLES) {
+      const esperados = new Set(
+        [...(destino[lista] || []), ...(origen[lista] || [])].map(idDe).filter(v => v !== undefined)
+      );
+      const presentes = new Set((escrito[lista] || []).map(idDe));
+      for (const id of esperados) {
+        if (!presentes.has(id)) throw new Error(`falta ${id} en ${lista}`);
+      }
+    }
+    const fusionadas = (origen.transactions || []).length;
+    console.log(`[hogares] fusion verificada: ${destinoId} recibe ${fusionadas} transacciones de ${origenId}`);
+    return { fusionadas };
+  } catch (err) {
+    await fs.writeFile(archivoDestino, JSON.stringify(destino, null, 2));
+    console.error('[hogares] fusion abortada, el hogar anfitrion queda como estaba:', err.message);
+    return { error: 'fusion_fallida' };
+  }
+}
+
+/** Aceptar es mudarse: cambia de hogar y se lleva lo suyo. */
+async function aceptarInvitacion(req, destinoId) {
+  const clave = claveDeUsuario(req.user);
+  const correo = normalizarCorreo(correoDelToken(req.user));
+  if (!clave || !correo) return { error: 'sin_identidad' };
+
+  const mapa = await leerHogares();
+  const destino = mapa.hogares[destinoId];
+  if (!destino) return { error: 'no_existe' };
+  if (!(destino.invitaciones || []).some(i => i.correo === correo)) return { error: 'no_invitado' };
+
+  const propioId = mapa.usuarios[clave];
+  if (propioId === destinoId) return { error: 'ya_es_miembro' };
+  if (miembrosDe(mapa, destinoId).length >= MIEMBROS_MAX) return { error: 'hogar_lleno' };
+
+  let fusionadas = 0;
+  if (propioId && mapa.hogares[propioId]) {
+    const r = await consolidar(propioId, destinoId);
+    if (r.error) return r;
+    fusionadas = r.fusionadas;
+    // El hogar de origen no se borra ni se reutiliza: queda marcado y con sus
+    // datos, que es lo unico que permite volver atras si algo salio mal.
+    mapa.hogares[propioId].absorbidoPor = destinoId;
+    mapa.hogares[propioId].fusionado = new Date().toISOString();
+  }
+
+  mapa.usuarios[clave] = destinoId;
+  destino.invitaciones = (destino.invitaciones || []).filter(i => i.correo !== correo);
+  await guardarHogares(mapa);
+  console.log(`[hogares] ${correo} se muda a ${destinoId} (${fusionadas} transacciones)`);
+  return { hogarId: destinoId, fusionadas };
+}
+
+async function rechazarInvitacion(req, destinoId) {
+  const correo = normalizarCorreo(correoDelToken(req.user));
+  if (!correo) return { error: 'sin_identidad' };
+  const mapa = await leerHogares();
+  const destino = mapa.hogares[destinoId];
+  if (!destino) return { error: 'no_existe' };
+  destino.invitaciones = (destino.invitaciones || []).filter(i => i.correo !== correo);
+  await guardarHogares(mapa);
+  return { hogarId: destinoId };
+}
+
+/**
+ * Resuelve el hogar y deja su archivo en req. Un 409 y no un 404: la peticion
+ * es correcta, lo que falta es un paso previo del usuario, y el cliente
+ * distingue por el codigo para enseñar el alta en vez de un error.
+ */
+async function conHogar(req, res) {
+  const id = await hogarDe(req);
+  if (!id) {
+    res.status(409).json({ error: 'Todavia no tienes un hogar', codigo: 'sin_hogar' });
+    return null;
+  }
+  req.hogarId = id;
+  req.archivo = archivoDeHogar(id);
+  return id;
+}
 const META_FILE = path.join(DATA_DIR, 'data.meta.json');
 const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
 const BACKUP_RETENTION_DAYS = 30;
@@ -51,43 +453,128 @@ if (!TENANT_ID || !CLIENT_ID) {
   }
   console.warn(aviso);
 }
-const JWKS_URI = `https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`;
-const ISSUER = `https://login.microsoftonline.com/${TENANT_ID}/v2.0`;
+/**
+ * Quien puede entrar, por correo, separado por comas. OPCIONAL.
+ *
+ * Quien se registra con Google entra como INVITADO de este mismo directorio, no
+ * por una segunda puerta: su token trae el mismo emisor y la misma audiencia que
+ * el de cualquiera de la casa. Por eso ya no hay una lista «para los de fuera»:
+ * a efectos del token no hay fuera.
+ *
+ * Lo que separa a unos de otros son los hogares, y eso no se negocia por
+ * configuracion. Esta lista es un freno de mano: si esta puesta, solo entran
+ * esos correos; si esta vacia, entra quien el directorio deje entrar.
+ */
+const ALLOWED_USERS = (process.env.ALLOWED_USERS || '')
+  .split(',')
+  .map(c => c.trim().toLowerCase())
+  .filter(Boolean);
 
-const client = jwksClient({
-  jwksUri: JWKS_URI,
-  cache: true,
-  rateLimit: true,
-  jwksRequestsPerMinute: 10,
-});
+console.log(
+  ALLOWED_USERS.length === 0
+    ? '[auth] sin lista: entra quien el directorio autorice, y estrena hogar vacio.'
+    : `[auth] lista activa: solo ${ALLOWED_USERS.length} correo(s) de ALLOWED_USERS.`
+);
 
-function getSigningKey(header, callback) {
-  client.getSigningKey(header.kid, (err, key) => {
-    if (err) return callback(err);
-    callback(null, key.getPublicKey());
+// Un unico emisor: el directorio de trabajo. Los invitados con Google son
+// cuentas de ESTE directorio, asi que su token sale de aqui igual que el resto.
+const EMISORES = [
+  {
+    nombre: 'trabajo',
+    issuer: `https://login.microsoftonline.com/${TENANT_ID}/v2.0`,
+    audiencia: CLIENT_ID,
+    jwksUri: `https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`,
+  },
+];
+
+for (const e of EMISORES) {
+  e.claves = jwksClient({
+    jwksUri: e.jwksUri,
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 10,
+  });
+}
+
+/** El correo del token, mires donde mires: cada proveedor lo pone en un sitio. */
+function correoDelToken(t) {
+  return String(t.preferred_username || t.email || t.upn || '').trim().toLowerCase();
+}
+
+function permitido(decoded) {
+  if (ALLOWED_USERS.length === 0) return true;
+  const correo = correoDelToken(decoded);
+  return Boolean(correo) && ALLOWED_USERS.includes(correo);
+}
+
+/** Verifica contra UN emisor. Resuelve con el token o con un error. */
+function verificarCon(emisor, token) {
+  return new Promise(resolve => {
+    jwt.verify(
+      token,
+      (header, cb) => emisor.claves.getSigningKey(header.kid, (err, key) => {
+        if (err) return cb(err);
+        cb(null, key.getPublicKey());
+      }),
+      { audience: emisor.audiencia, issuer: emisor.issuer, algorithms: ['RS256'] },
+      (err, decoded) => resolve(err ? { error: err } : { decoded }),
+    );
   });
 }
 
 // JWT auth middleware for API routes
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
+  // Dos formas de identificarse, y las dos valen igual a partir de aqui:
+  // el token de Entra que trae la pareja, o la cookie de sesion que emitimos
+  // nosotros cuando alguien entra por Google. El resto del servidor no
+  // distingue: solo mira req.user, y ahi hay un sub y un correo en ambos casos.
+  const sesion = sesionDe(req);
+  if (sesion) {
+    req.user = sesion;
+    req.emisor = 'google';
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'No token provided' });
   }
 
   const token = authHeader.split(' ')[1];
-  jwt.verify(token, getSigningKey, {
-    audience: CLIENT_ID,
-    issuer: ISSUER,
-    algorithms: ['RS256'],
-  }, (err, decoded) => {
-    if (err) {
-      console.error('Token validation error:', err.message);
+
+  // El emisor del propio token dice a quien preguntar: probar todos a ciegas
+  // gasta una llamada de claves por proveedor y ensucia los logs con errores
+  // que no son fallos.
+  let emisorDelToken = null;
+  try {
+    const cuerpo = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+    emisorDelToken = cuerpo && cuerpo.iss;
+  } catch {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+
+  const candidatos = EMISORES.filter(e => e.issuer === emisorDelToken);
+  if (candidatos.length === 0) {
+    console.error('[auth] emisor no reconocido:', emisorDelToken);
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+
+  for (const emisor of candidatos) {
+    const r = await verificarCon(emisor, token);
+    if (r.error) {
+      console.error(`[auth] token invalido (${emisor.nombre}):`, r.error.message);
       return res.status(401).json({ error: 'Invalid token' });
     }
-    req.user = decoded;
-    next();
-  });
+    if (!permitido(r.decoded)) {
+      // 403 y no 401: el token es bueno, quien lo trae no esta invitado. Un
+      // 401 haria que el cliente reintentara el login en bucle.
+      console.warn(`[auth] fuera de la lista: ${correoDelToken(r.decoded) || '(sin correo)'}`);
+      return res.status(403).json({ error: 'Tu cuenta no tiene acceso a estos datos' });
+    }
+    req.user = r.decoded;
+    req.emisor = emisor.nombre;
+    return next();
+  }
 };
 
 // CORS. Los origenes de desarrollo van fijos; los de produccion llegan por
@@ -140,58 +627,43 @@ app.get('/healthz', async (req, res) => {
     timestamp: new Date().toISOString(),
     build: BUILD.sha,
     builtAt: BUILD.builtAt,
+    // Para poder comprobar desde fuera si la entrada por Google quedo
+    // configurada, sin tener que leer variables de entorno del servidor.
+    google: GOOGLE_ACTIVO,
   });
 });
+
+// Entrar con Google va ANTES del middleware y fuera de /api: son las rutas por
+// las que se llega sin tener todavia con que identificarse.
+montarRutasGoogle(app);
 
 // Auth middleware on ALL API operations (including GET)
 app.use('/api', authMiddleware);
 
-// Initialize data file if it doesn't exist
-async function initDataFile() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.access(DATA_FILE);
-  } catch {
-    const initialData = {
-      transactions: [],
-      accounts: [{
-        id: 'default',
-        name: 'Cuenta Principal',
-        balance: 0,
-        color: '#00D1B2',
-        icon: '🏦',
-        type: 'debit',
-      }],
-      budgets: [],
-      currency: 'PEN',
-      user: null,
-      users: [],
-      goals: [],
-      investments: [],
-      recurring: [],
-      autosave: [],
-    };
-    await fs.writeFile(DATA_FILE, JSON.stringify(initialData, null, 2));
-  }
-}
 
 // ─── Version tracking (multi-device sync + optimistic concurrency) ───
 // Kept in a separate meta file so it never has to be merged into the
 // AppData blob the client reads, and a version bump can never corrupt data.
-async function readMeta() {
+// La version es por hogar: es el numero que usan los dispositivos para saber
+// si tienen datos frescos, y compartirlo entre hogares haria que el cambio de
+// uno invalidara la cache del otro.
+function archivoMeta(hogarId) {
+  return hogarId ? path.join(HOGARES_DIR, hogarId, 'data.meta.json') : META_FILE;
+}
+
+async function readMeta(hogarId) {
   try {
-    const raw = await fs.readFile(META_FILE, 'utf8');
-    return JSON.parse(raw);
+    return JSON.parse(await fs.readFile(archivoMeta(hogarId), 'utf8'));
   } catch {
     return { version: 0, updatedAt: new Date(0).toISOString() };
   }
 }
 
-async function bumpVersion() {
-  const meta = await readMeta();
+async function bumpVersion(hogarId) {
+  const meta = await readMeta(hogarId);
   const next = { version: (meta.version || 0) + 1, updatedAt: new Date().toISOString() };
   try {
-    await fs.writeFile(META_FILE, JSON.stringify(next, null, 2));
+    await fs.writeFile(archivoMeta(hogarId), JSON.stringify(next, null, 2));
   } catch (err) {
     console.warn('[meta] version bump write failed:', err.code || err.message);
   }
@@ -202,18 +674,22 @@ async function bumpVersion() {
 // Runs before every write. Copies the CURRENT (pre-write) data.json into
 // backups/ once per calendar day, so a bad write or an accidental empty
 // overwrite can always be recovered from the prior day's snapshot.
-async function dailyBackup() {
+async function dailyBackup(hogarId) {
+  const archivo = hogarId ? archivoDeHogar(hogarId) : DATA_FILE;
   try {
     await fs.mkdir(BACKUPS_DIR, { recursive: true });
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const backupFile = path.join(BACKUPS_DIR, `data_${today}.json`);
+    // El hogar entra en el nombre: con un solo archivo por dia, el segundo
+    // hogar que escribiera se llevaria por delante el respaldo del primero.
+    const sufijo = hogarId ? `_${hogarId}` : '';
+    const backupFile = path.join(BACKUPS_DIR, `data${sufijo}_${today}.json`);
     try {
       await fs.access(backupFile);
       return; // already backed up today
     } catch {
       // no backup yet today — proceed
     }
-    const current = await fs.readFile(DATA_FILE, 'utf8');
+    const current = await fs.readFile(archivo, 'utf8');
     JSON.parse(current); // don't propagate a backup of corrupt JSON
     await fs.writeFile(backupFile, current);
     await rotateBackups();
@@ -231,7 +707,7 @@ async function rotateBackups() {
     const files = await fs.readdir(BACKUPS_DIR);
     const cutoff = Date.now() - BACKUP_RETENTION_DAYS * 24 * 60 * 60 * 1000;
     for (const file of files) {
-      const match = file.match(/^data_(\d{4}-\d{2}-\d{2})\.json$/);
+      const match = file.match(/^data(?:_.+?)?_(\d{4}-\d{2}-\d{2})\.json$/);
       if (!match) continue;
       const fileDate = new Date(match[1]).getTime();
       if (fileDate < cutoff) {
@@ -277,10 +753,94 @@ const EMPTY_DATA = {
   dismissedSubscriptions: [],
 };
 
+// Alta de hogar. Quien llega sin uno --siempre alguien del tenant externo--
+// estrena el suyo, vacio. Nunca se une a uno existente por su cuenta: eso
+// tiene que venir de una invitacion.
+app.post('/api/hogar', async (req, res) => {
+  try {
+    const yaTiene = await hogarDe(req);
+    if (yaTiene) return res.json({ hogarId: yaTiene, creado: false });
+    const id = await crearHogar(req, req.body && req.body.nombre);
+    if (!id) return res.status(400).json({ error: 'Token sin identidad utilizable' });
+    console.log(`[hogares] ${correoDelToken(req.user) || id} estrena hogar ${id}`);
+    res.json({ hogarId: id, creado: true });
+  } catch (err) {
+    console.error('[hogares] alta fallida:', err.message);
+    res.status(500).json({ error: 'No se pudo crear el hogar' });
+  }
+});
+
+// Que hogar tengo, si tengo, y quien me esta llamando al suyo. El cliente lo
+// usa para decidir entre entrar, mostrar el alta o mostrar la invitacion, sin
+// provocar un 409 a proposito.
+app.get('/api/hogar', async (req, res) => {
+  try {
+    const id = await hogarDe(req);
+    const mapa = await leerHogares();
+    const hogar = id ? mapa.hogares[id] : null;
+    res.json({
+      hogarId: id,
+      correo: correoDelToken(req.user) || null,
+      nombre: hogar ? hogar.nombre : null,
+      // Los correos de quienes lo comparten, para que la pantalla de Pareja
+      // diga quien esta dentro en vez de pedir que lo escriban a mano.
+      miembros: id ? miembrosDe(mapa, id).map(k => correoDe(mapa, k)).filter(Boolean) : [],
+      enviadas: hogar ? (hogar.invitaciones || []).map(i => i.correo) : [],
+      invitaciones: await invitacionesPara(req, mapa),
+    });
+  } catch (err) {
+    console.error('[hogares] consulta fallida:', err.message);
+    res.status(500).json({ error: 'No se pudo consultar el hogar' });
+  }
+});
+
+// Cada codigo de error dice algo distinto al usuario, asi que se traducen aqui
+// una sola vez y el cliente solo elige el texto.
+const ESTADO_INVITACION = {
+  correo_invalido: 400, eres_tu: 400, sin_identidad: 400,
+  sin_hogar: 409, hogar_lleno: 409, ya_es_miembro: 409,
+  sin_cuenta: 404, no_existe: 404, no_invitado: 403,
+  destino_ilegible: 500, fusion_fallida: 500,
+};
+
+app.post('/api/hogar/invitacion', async (req, res) => {
+  try {
+    const r = await invitar(req, req.body && req.body.correo);
+    if (r.error) return res.status(ESTADO_INVITACION[r.error] || 400).json({ codigo: r.error });
+    res.json(r);
+  } catch (err) {
+    console.error('[hogares] invitacion fallida:', err.message);
+    res.status(500).json({ error: 'No se pudo enviar la invitacion' });
+  }
+});
+
+app.post('/api/hogar/invitacion/aceptar', async (req, res) => {
+  try {
+    const r = await aceptarInvitacion(req, req.body && req.body.hogarId);
+    if (r.error) return res.status(ESTADO_INVITACION[r.error] || 400).json({ codigo: r.error });
+    res.json(r);
+  } catch (err) {
+    console.error('[hogares] fusion fallida:', err.message);
+    res.status(500).json({ error: 'No se pudo unir al hogar' });
+  }
+});
+
+app.post('/api/hogar/invitacion/rechazar', async (req, res) => {
+  try {
+    const r = await rechazarInvitacion(req, req.body && req.body.hogarId);
+    if (r.error) return res.status(ESTADO_INVITACION[r.error] || 400).json({ codigo: r.error });
+    res.json(r);
+  } catch (err) {
+    console.error('[hogares] rechazo fallido:', err.message);
+    res.status(500).json({ error: 'No se pudo rechazar la invitacion' });
+  }
+});
+
 app.get('/api/data', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   try {
-    const data = await fs.readFile(DATA_FILE, 'utf8');
+    if (!(await conHogar(req, res))) return;
+    const data = await fs.readFile(req.archivo, 'utf8');
     res.json(scrubUserPasswords(JSON.parse(data)));
   } catch (error) {
     // Fresh-install / persistent-volume-not-yet-populated → return empty
@@ -288,11 +848,11 @@ app.get('/api/data', async (req, res) => {
     // the file. Same for parse errors on a corrupt file: we surface the
     // shell rather than a hard error.
     if (error.code === 'ENOENT' || error instanceof SyntaxError) {
-      console.warn(`[api/data] ${error.code || 'parse_error'} on ${DATA_FILE}; returning empty shell`);
+      console.warn(`[api/data] ${error.code || 'parse_error'} on ${req.archivo}; returning empty shell`);
       // Best-effort: seed the file so future reads succeed.
       try {
-        await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-        await fs.writeFile(DATA_FILE, JSON.stringify(EMPTY_DATA, null, 2), 'utf8');
+        await fs.mkdir(path.dirname(req.archivo), { recursive: true });
+        await fs.writeFile(req.archivo, JSON.stringify(EMPTY_DATA, null, 2), 'utf8');
       } catch (seedErr) {
         console.warn('[api/data] seed write failed:', seedErr.code || seedErr.message);
       }
@@ -308,15 +868,16 @@ app.get('/api/data', async (req, res) => {
 // the full data blob.
 app.get('/api/data/version', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  const meta = await readMeta();
-  res.json(meta);
+  if (!(await conHogar(req, res))) return;
+  res.json(await readMeta(req.hogarId));
 });
 
 // Download the current data file as an attachment — manual backup button
 // in the UI, independent of the server's own daily rotation.
 app.get('/api/backup', async (req, res) => {
   try {
-    const data = await fs.readFile(DATA_FILE, 'utf8');
+    if (!(await conHogar(req, res))) return;
+    const data = await fs.readFile(req.archivo, 'utf8');
     const scrubbed = scrubUserPasswords(JSON.parse(data));
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     res.setHeader('Content-Disposition', `attachment; filename="juntos-backup_${stamp}.json"`);
@@ -331,6 +892,7 @@ app.get('/api/backup', async (req, res) => {
 // Update specific collection
 app.post('/api/data/:collection', async (req, res) => {
   try {
+    if (!(await conHogar(req, res))) return;
     const { collection } = req.params;
     let newData = req.body;
 
@@ -341,15 +903,15 @@ app.post('/api/data/:collection', async (req, res) => {
     if (collection === 'user') newData = stripPassword(newData);
     if (collection === 'users' && Array.isArray(newData)) newData = newData.map(stripPassword);
 
-    await dailyBackup();
+    await dailyBackup(req.hogarId);
 
-    const data = await fs.readFile(DATA_FILE, 'utf8');
+    const data = await fs.readFile(req.archivo, 'utf8');
     const allData = JSON.parse(data);
 
     allData[collection] = newData;
 
-    await fs.writeFile(DATA_FILE, JSON.stringify(allData, null, 2));
-    const meta = await bumpVersion();
+    await fs.writeFile(req.archivo, JSON.stringify(allData, null, 2));
+    const meta = await bumpVersion(req.hogarId);
     res.json({ success: true, data: allData[collection], version: meta.version });
   } catch (error) {
     console.error('Error updating data:', error);
@@ -399,14 +961,15 @@ function smartCategorize(description) {
 // ─── BCP Email Sync endpoint ───
 app.post('/api/sync-bcp', async (req, res) => {
   try {
+    if (!(await conHogar(req, res))) return;
     const { transactions: newTxs } = req.body;
     if (!Array.isArray(newTxs) || newTxs.length === 0) {
       return res.json({ success: true, imported: 0, message: 'No transactions to import' });
     }
 
-    await dailyBackup();
+    await dailyBackup(req.hogarId);
 
-    const data = JSON.parse(await fs.readFile(DATA_FILE, 'utf8'));
+    const data = JSON.parse(await fs.readFile(req.archivo, 'utf8'));
     const existingKeys = new Set(
       data.transactions.map(t => `${t.date}|${t.amount}|${t.type}|${t.description}`)
     );
@@ -461,8 +1024,8 @@ app.post('/api/sync-bcp', async (req, res) => {
       }
     }
 
-    await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
-    const meta = await bumpVersion();
+    await fs.writeFile(req.archivo, JSON.stringify(data, null, 2));
+    const meta = await bumpVersion(req.hogarId);
     res.json({ success: true, imported, skipped, total: data.transactions.length, version: meta.version });
   } catch (error) {
     console.error('Error syncing BCP:', error);
@@ -473,10 +1036,11 @@ app.post('/api/sync-bcp', async (req, res) => {
 // Update all data at once
 app.post('/api/data', async (req, res) => {
   try {
+    if (!(await conHogar(req, res))) return;
     const newData = scrubUserPasswords(req.body);
-    await dailyBackup();
-    await fs.writeFile(DATA_FILE, JSON.stringify(newData, null, 2));
-    const meta = await bumpVersion();
+    await dailyBackup(req.hogarId);
+    await fs.writeFile(req.archivo, JSON.stringify(newData, null, 2));
+    const meta = await bumpVersion(req.hogarId);
     res.json({ success: true, version: meta.version });
   } catch (error) {
     console.error('Error updating data:', error);
@@ -547,9 +1111,11 @@ app.post('/api/push/subscribe', async (req, res) => {
   try {
     const store = await readPushSubs();
     const uid = userKey(req);
+    const hogarId = await hogarDe(req);
     const rest = store.subscriptions.filter(function (x) { return x.endpoint !== sub.endpoint; });
     rest.push({
       userId: uid,
+      hogarId: hogarId,
       endpoint: sub.endpoint,
       keys: sub.keys,
       createdAt: new Date().toISOString(),
@@ -681,14 +1247,32 @@ async function runDailyDigest() {
     const today = limaDateStr();
     if (store.subscriptions.every(function (s) { return s.lastSentDate === today; })) return;
 
-    const data = JSON.parse(await fs.readFile(DATA_FILE, 'utf8'));
-    const payload = buildDigest(data);
-    if (!payload) return;
+    // Un resumen por hogar. Antes salia uno solo del archivo global; con los
+    // datos partidos, mandarselo a todos seria contarle a cada quien las
+    // cuentas de otro.
+    const payloadPorHogar = new Map();
+    async function payloadDe(hogarId) {
+      const clave = hogarId || '';
+      if (payloadPorHogar.has(clave)) return payloadPorHogar.get(clave);
+      let payload = null;
+      try {
+        const archivo = hogarId ? archivoDeHogar(hogarId) : DATA_FILE;
+        payload = buildDigest(JSON.parse(await fs.readFile(archivo, 'utf8')));
+      } catch (err) {
+        console.warn(`[push] sin datos para el hogar ${clave || '(global)'}:`, err.code || err.message);
+      }
+      payloadPorHogar.set(clave, payload);
+      return payload;
+    }
 
     const survivors = [];
     let sentCount = 0;
     for (const sub of store.subscriptions) {
       if (sub.lastSentDate === today) { survivors.push(sub); continue; }
+      const payload = await payloadDe(sub.hogarId);
+      // Sin datos que resumir la suscripcion se conserva: el fallo es del
+      // archivo de hoy, no del dispositivo.
+      if (!payload) { survivors.push(sub); continue; }
       const r = await sendTo(sub, payload);
       if (r === 'gone') continue;
       if (r === 'sent') sentCount++;
@@ -803,10 +1387,17 @@ app.use((req, res, next) => {
 // Exportado para poder probar la logica de fechas del resumen sin levantar
 // el servidor. El arranque queda detras de require.main para que importar
 // este archivo desde un test no abra un puerto.
-module.exports = { buildDigest, limaDateStr, addDaysStr };
+module.exports = {
+  buildDigest, limaDateStr, addDaysStr,
+  correoDelToken, permitido, EMISORES,
+  claveDeUsuario, leerHogares, guardarHogares, archivoDeHogar,
+  migrarAHogares, hogarDe, crearHogar,
+  invitar, invitacionesPara, aceptarInvitacion, rechazarInvitacion,
+  fusionarDatos, consolidar, miembrosDe,
+};
 
 // Start server
-if (require.main === module) initDataFile().then(() => {
+if (require.main === module) migrarAHogares().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend server running on http://localhost:${PORT}`);
     console.log(`Available on network at http://0.0.0.0:${PORT}`);

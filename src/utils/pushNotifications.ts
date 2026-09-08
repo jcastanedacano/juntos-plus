@@ -1,4 +1,4 @@
-import { getToken } from '../auth/getToken';
+import { tokenOpcional } from '../auth/getToken';
 import { getAPIUrl } from './storageAPI';
 
 /**
@@ -44,14 +44,15 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 }
 
 async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
-  const token = await getToken();
+  const token = await tokenOpcional();
   return fetch(`${getAPIUrl()}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers || {}),
     },
+    credentials: 'include',
     cache: 'no-store',
   });
 }

@@ -24,6 +24,8 @@ import { Sidebar } from './components/Sidebar';
 import type { ViewType } from './components/Sidebar';
 import { Header, PeriodFilter } from './components/Header';
 import { LoginPage } from './components/LoginPage';
+import { AltaHogar } from './components/AltaHogar';
+import { consultarHogar, EstadoHogar } from './utils/hogar';
 import { useToast } from './components/ui/Toast';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -85,6 +87,8 @@ const viewTitles: Record<ViewType, string> = {
 
 function App() {
   const isAuthenticated = useIsAuthenticated();
+  // null mientras se pregunta; sin hogarId, toca el alta antes de la aplicacion.
+  const [hogar, setHogar] = useState<EstadoHogar | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [currency, setCurrency] = useState('PEN');
@@ -417,8 +421,22 @@ function App() {
     }
   }, [addToast]);
 
-  // Load data only when authenticated
-  useEffect(() => { if (isAuthenticated) loadData(); }, [loadData, isAuthenticated]);
+  // Los datos son del hogar, no del usuario. Mientras no se sepa cual es, no se
+  // piden: el servidor responderia 409 y saldria un error donde en realidad
+  // falta un paso de alta.
+  // Se pregunta SIEMPRE, no solo con sesion de Microsoft: quien entra por
+  // Google no tiene cuenta en MSAL, y su identidad viaja en la cookie. El
+  // servidor es el unico que sabe si reconoce a quien pregunta.
+  useEffect(() => {
+    let vigente = true;
+    consultarHogar().then(e => { if (vigente) setHogar(e); });
+    return () => { vigente = false; };
+  }, [isAuthenticated]);
+
+  // Load data only when authenticated and the household is known
+  useEffect(() => {
+    if (isAuthenticated && hogar?.hogarId) loadData();
+  }, [loadData, isAuthenticated, hogar?.hogarId]);
 
   // Tipo de cambio: se refresca al entrar, como mucho cada 6 horas y solo si
   // no hay una tasa fijada a mano. Falla en silencio a proposito.
@@ -1473,8 +1491,26 @@ function App() {
     </Suspense>
   );
 
-  if (!isAuthenticated) {
+  // Todavia preguntando quien es. Un parpadeo del login a quien ya tiene sesion
+  // seria peor que esperar un momento en blanco.
+  if (hogar === null) {
+    return <div className="app-cargando" aria-busy="true" />;
+  }
+
+  // Ni token de Microsoft ni cookie de Google: no hay a quien enseñarle nada.
+  if (!isAuthenticated && !hogar.autenticado) {
     return <LoginPage />;
+  }
+
+  if (!hogar.hogarId) {
+    return (
+      <AltaHogar
+        estado={hogar}
+        // Recarga completa a proposito: storageAPI cachea los datos en el
+        // modulo, y tras estrenar o unirse a un hogar ese cache es de otro.
+        onListo={() => window.location.reload()}
+      />
+    );
   }
 
   return (

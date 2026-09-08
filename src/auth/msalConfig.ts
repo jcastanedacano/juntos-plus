@@ -13,6 +13,15 @@ if (!CLIENT_ID || !TENANT_ID) {
   );
 }
 
+// Quien entra con Google lo hace por la MISMA puerta: se registra como invitado
+// del directorio de trabajo, asi que su token viene de la misma autoridad y con
+// la misma audiencia. No hay segundo tenant ni segunda autoridad; lo unico que
+// cambia es una pista que lleva al usuario directo a Google.
+//
+// La bandera existe para no ensenar el boton antes de que el directorio tenga
+// configurado el auto-registro: seria un boton que lleva a un error.
+export const LOGIN_GOOGLE_ACTIVO = import.meta.env.VITE_GOOGLE_ACTIVO === 'true';
+
 export const msalConfig: Configuration = {
   auth: {
     clientId: CLIENT_ID,

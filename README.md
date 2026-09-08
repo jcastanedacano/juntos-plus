@@ -14,7 +14,11 @@ dólares, tarjetas BCP, Yape, TEA, cuotas.
 No pretende reemplazar al banco. Pretende responder dos preguntas que el banco
 no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 
-<!-- capturas: van aqui, ver docs/img/ -->
+<img src="docs/img/inicio.png" alt="Inicio: lo que queda libre, el ritmo de gasto del mes y los mayores movimientos" width="32%">
+<img src="docs/img/movimientos.png" alt="Movimientos: la lista agrupada por dia con filtros por tipo" width="32%">
+<img src="docs/img/fijos.png" alt="Fijos: el total mensual de cargos automaticos y el peso de las suscripciones" width="32%">
+
+<sub>Capturas con datos de ejemplo.</sub>
 
 </div>
 

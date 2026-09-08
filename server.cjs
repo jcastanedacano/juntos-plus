@@ -224,6 +224,22 @@ function miembrosDe(mapa, hogarId) {
   return Object.keys(mapa.usuarios).filter(k => mapa.usuarios[k] === hogarId);
 }
 
+/**
+ * Los correos que ya pertenecen al hogar migrado por configuracion, hayan
+ * entrado o no.
+ *
+ * El indice de correos se llena cuando alguien visita, asi que la pareja que
+ * todavia no ha abierto la aplicacion desde el reparto no aparecia en ningun
+ * sitio: la pantalla ofrecia invitarla, y al intentarlo contestaba «esa
+ * persona todavia no ha entrado». Las dos cosas falsas. Es miembro desde que
+ * su correo esta en la lista; lo unico que le falta es pasar por aqui.
+ */
+function nombradosDe(mapa, hogarId) {
+  const h = mapa.hogares[hogarId];
+  if (!h || h.origen !== 'migracion') return [];
+  return MIEMBROS_PRINCIPAL.filter(v => v.includes('@'));
+}
+
 function correoDe(mapa, clave) {
   const correos = mapa.correos || {};
   return Object.keys(correos).find(c => correos[c] === clave) || null;
@@ -242,6 +258,10 @@ async function invitar(req, correoCrudo) {
   if (!hogarId || !mapa.hogares[hogarId]) return { error: 'sin_hogar' };
 
   const miembros = miembrosDe(mapa, hogarId);
+  // Antes de mirar el indice: si esta nombrado en la configuracion, ya es de
+  // este hogar aunque nunca haya entrado.
+  if (nombradosDe(mapa, hogarId).includes(correo)) return { error: 'ya_es_miembro' };
+
   const claveInvitada = (mapa.correos || {})[correo];
   // Solo se llama a quien ya tiene cuenta. Guardar la invitacion a ciegas
   // dejaria a quien invita esperando a alguien que quiza nunca se registre y
@@ -802,7 +822,12 @@ app.get('/api/hogar', async (req, res) => {
       nombre: hogar ? hogar.nombre : null,
       // Los correos de quienes lo comparten, para que la pantalla de Pareja
       // diga quien esta dentro en vez de pedir que lo escriban a mano.
-      miembros: id ? miembrosDe(mapa, id).map(k => correoDe(mapa, k)).filter(Boolean) : [],
+      miembros: id
+        ? [...new Set([
+            ...miembrosDe(mapa, id).map(k => correoDe(mapa, k)).filter(Boolean),
+            ...nombradosDe(mapa, id),
+          ])]
+        : [],
       enviadas: hogar ? (hogar.invitaciones || []).map(i => i.correo) : [],
       invitaciones: await invitacionesPara(req, mapa),
     });
@@ -1411,7 +1436,7 @@ module.exports = {
   claveDeUsuario, leerHogares, guardarHogares, archivoDeHogar,
   migrarAHogares, hogarDe, crearHogar,
   invitar, invitacionesPara, aceptarInvitacion, rechazarInvitacion, MONEDAS,
-  fusionarDatos, consolidar, miembrosDe,
+  fusionarDatos, consolidar, miembrosDe, nombradosDe,
 };
 
 // Start server

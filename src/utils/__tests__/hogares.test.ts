@@ -356,3 +356,40 @@ describe('la moneda del hogar', () => {
     expect(JSON.parse(fs.readFileSync(s.archivoDeHogar(id), 'utf8')).currency).toBe('PEN');
   });
 });
+
+describe('la pareja nombrada ya es de la casa', () => {
+  const jorge = { user: { oid: 'jorge-oid', email: 'jorge@itdemos.com' }, emisor: 'trabajo' };
+
+  it('cuenta como miembro aunque todavia no haya entrado nunca', async () => {
+    fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(datosDeEjemplo));
+    const s = cargarServidor(dir, 'jorge@itdemos.com,me@zumyalvarez.com');
+    await s.migrarAHogares();
+    await s.hogarDe(jorge);
+
+    const mapa = await s.leerHogares();
+    // Zumy no ha visitado: no esta en el indice de correos.
+    expect(mapa.correos['me@zumyalvarez.com']).toBeUndefined();
+    // Y aun asi es miembro del hogar migrado.
+    expect(s.nombradosDe(mapa, 'principal')).toContain('me@zumyalvarez.com');
+  });
+
+  // El sintoma que lo destapo: la pantalla ofrecia invitarla y al hacerlo
+  // contestaba «esa persona todavia no ha entrado». Las dos cosas falsas.
+  it('invitarla dice que ya esta dentro, no que no tenga cuenta', async () => {
+    fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(datosDeEjemplo));
+    const s = cargarServidor(dir, 'jorge@itdemos.com,me@zumyalvarez.com');
+    await s.migrarAHogares();
+    await s.hogarDe(jorge);
+
+    expect((await s.invitar(jorge, 'me@zumyalvarez.com')).error).toBe('ya_es_miembro');
+  });
+
+  it('en un hogar normal la lista no aplica: ahi si hay que invitar', async () => {
+    const s = cargarServidor(dir, 'jorge@itdemos.com,me@zumyalvarez.com');
+    await s.crearHogar(ana, 'Casa de Ana');
+    const mapa = await s.leerHogares();
+    const suyo = mapa.usuarios['ana-oid'];
+    expect(s.nombradosDe(mapa, suyo)).toEqual([]);
+    expect((await s.invitar(ana, 'me@zumyalvarez.com')).error).toBe('sin_cuenta');
+  });
+});

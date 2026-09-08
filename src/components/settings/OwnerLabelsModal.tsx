@@ -1,8 +1,9 @@
 import { useState, FormEvent, useEffect } from 'react';
-import { X, RotateCcw } from 'lucide-react';
+import { X, RotateCcw, Send, Check } from 'lucide-react';
 import { DEFAULT_OWNER_LABELS, getOwnerLabels, setOwnerLabels } from '../../utils/ownerLabels';
 import { DEFAULT_FX_RATES, getFxRates, setFxRates, getFxMeta, clearFxOverride } from '../../utils/fx';
-import { getCurrentUserEmail, getUserEmailMap, setUserEmailMap } from '../../utils/userIdentity';
+import { getCurrentUserEmail, setUserEmailMap } from '../../utils/userIdentity';
+import { consultarHogar, invitarAlHogar, explicar, EstadoHogar } from '../../utils/hogar';
 
 interface OwnerLabelsModalProps {
   onClose: () => void;
@@ -13,16 +14,52 @@ interface OwnerLabelsModalProps {
 export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
   const initial = getOwnerLabels();
   const initialFx = getFxRates();
-  const initialMap = getUserEmailMap();
-  const currentEmail = getCurrentUserEmail();
   const [shared, setShared] = useState(initial.shared);
   const [me, setMe] = useState(initial.me);
   const [partner, setPartner] = useState(initial.partner);
   const [usdRate, setUsdRate] = useState(String(initialFx.USD));
   const [eurRate, setEurRate] = useState(String(initialFx.EUR));
-  const [partnerEmail, setPartnerEmail] = useState(initialMap.partner ?? '');
   const [fxMeta, setFxMeta] = useState(getFxMeta());
   const [fxBusy, setFxBusy] = useState(false);
+  const [hogar, setHogar] = useState<EstadoHogar | null>(null);
+  const [invitado, setInvitado] = useState('');
+  const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  // Quien esta dentro lo dice el servidor, no el navegador: es el token el que
+  // trae el correo, y el mapa de identidades depende de acertarlo.
+  useEffect(() => {
+    let vigente = true;
+    consultarHogar().then(e => {
+      if (!vigente) return;
+      setHogar(e);
+      // El correo de la pareja deja de escribirse a mano: se deduce de quien
+      // comparte el hogar. Es lo que reparte los gastos por persona.
+      const otro = e.miembros.find(c => c && c !== e.correo);
+      if (otro) setUserEmailMap({ partner: otro });
+    });
+    return () => { vigente = false; };
+  }, []);
+
+  const miCorreo = hogar?.correo || getCurrentUserEmail() || null;
+  const pareja = hogar ? hogar.miembros.find(c => c && c !== hogar.correo) || null : null;
+  const pendiente = hogar?.enviadas[0] || null;
+
+  const invitar = async () => {
+    const correo = invitado.trim().toLowerCase();
+    if (!correo) return;
+    setEnviando(true);
+    setAviso(null);
+    const r = await invitarAlHogar(correo);
+    setEnviando(false);
+    if (r.ok) {
+      setInvitado('');
+      setAviso({ tipo: 'ok', texto: `Invitación enviada a ${correo}. La verá al entrar.` });
+      setHogar(await consultarHogar());
+    } else {
+      setAviso({ tipo: 'error', texto: explicar(r.codigo) });
+    }
+  };
 
   useEffect(() => {
     // Abrir directo en la seccion pedida: la fila de Ajustes ya prometio a
@@ -49,9 +86,6 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
     setFxRates({
       USD: parsedUsd > 0 ? parsedUsd : DEFAULT_FX_RATES.USD,
       EUR: parsedEur > 0 ? parsedEur : DEFAULT_FX_RATES.EUR,
-    });
-    setUserEmailMap({
-      partner: partnerEmail.trim().toLowerCase() || undefined,
     });
     onClose();
   };
@@ -129,37 +163,76 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
             fontWeight: 600,
             marginBottom: 10,
           }}>
-            Sesión multi-usuario
+            Quién comparte este hogar
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.5 }}>
-            Cuando tu pareja entra con su correo, las cuentas creadas, transacciones
-            importadas y ajustes se tagueean como <strong>{partner || DEFAULT_OWNER_LABELS.partner}</strong>{' '}
+            Las dos personas de un hogar ven exactamente los mismos datos. Lo que
+            registre tu pareja se etiqueta como <strong>{partner || DEFAULT_OWNER_LABELS.partner}</strong>{' '}
             en vez de <strong>{me || DEFAULT_OWNER_LABELS.me}</strong>.
           </p>
 
           <div className="form-group">
-            <label className="form-label">
-              Tu correo (sesión actual)
-            </label>
+            <label className="form-label">Tu correo</label>
             <input
               type="email"
               className="form-input"
-              value={currentEmail || '(no detectado)'}
+              value={miCorreo || 'Cargando…'}
               disabled
               style={{ opacity: 0.6 }}
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Correo de tu pareja</label>
-            <input
-              type="email"
-              className="form-input"
-              placeholder="ej. sandra@ejemplo.com"
-              value={partnerEmail}
-              onChange={(e) => setPartnerEmail(e.target.value)}
-            />
-          </div>
+          {pareja ? (
+            <div className="form-group">
+              <label className="form-label">Tu pareja</label>
+              <div className="hogar-miembro">
+                <Check size={14} />
+                <span>{pareja}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="form-group">
+              <label className="form-label">Invitar a tu pareja</label>
+              {/* Se invita por correo a quien ya entro alguna vez. Escribir la
+                  direccion a mano no unia nada: solo etiquetaba en este
+                  navegador, y en el otro telefono no existia. */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="email"
+                  className="form-input"
+                  placeholder="su correo"
+                  value={invitado}
+                  onChange={(e) => setInvitado(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); invitar(); }
+                  }}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={enviando || !invitado.trim()}
+                  onClick={invitar}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}
+                >
+                  <Send size={14} /> Invitar
+                </button>
+              </div>
+              {pendiente && !aviso && (
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
+                  Invitación pendiente para <strong>{pendiente}</strong>. Se unirá cuando la acepte.
+                </p>
+              )}
+              {aviso && (
+                <p style={{
+                  fontSize: 12, marginTop: 8, lineHeight: 1.45,
+                  color: aviso.tipo === 'ok' ? 'var(--text-secondary)' : '#ff8f8f',
+                }}>
+                  {aviso.texto}
+                </p>
+              )}
+            </div>
+          )}
 
           <div style={{
             marginTop: 18,

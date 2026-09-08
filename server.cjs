@@ -108,21 +108,25 @@ async function hogarDe(req) {
   if (!clave) return null;
 
   const mapa = await leerHogares();
-  if (mapa.usuarios[clave] && mapa.hogares[mapa.usuarios[clave]]) {
-    return mapa.usuarios[clave];
-  }
+  // Cada visita deja anotado el correo de quien viene. Es lo que despues
+  // permite que su pareja lo llame por su direccion en vez de por un oid.
+  let cambio = anotarCorreo(mapa, clave, correoDelToken(req.user));
 
-  if (req.emisor === 'trabajo') {
-    const abierto = Object.keys(mapa.hogares).find(id => mapa.hogares[id].abiertoAlDirectorio);
+  let id = null;
+  if (mapa.usuarios[clave] && mapa.hogares[mapa.usuarios[clave]]) {
+    id = mapa.usuarios[clave];
+  } else if (req.emisor === 'trabajo') {
+    const abierto = Object.keys(mapa.hogares).find(h => mapa.hogares[h].abiertoAlDirectorio);
     if (abierto) {
       mapa.usuarios[clave] = abierto;
-      await guardarHogares(mapa);
+      cambio = true;
+      id = abierto;
       console.log(`[hogares] ${correoDelToken(req.user) || clave} se une a ${abierto} por el directorio`);
-      return abierto;
     }
   }
 
-  return null;
+  if (cambio) await guardarHogares(mapa);
+  return id;
 }
 
 /** Crea un hogar vacio y mete dentro a quien lo pide. */
@@ -140,8 +144,230 @@ async function crearHogar(req, nombre) {
     abiertoAlDirectorio: false,
   };
   mapa.usuarios[clave] = id;
+  anotarCorreo(mapa, clave, correoDelToken(req.user));
   await guardarHogares(mapa);
   return id;
+}
+
+// ─── Llamar a alguien a tu hogar ────────────────────────────────────
+//
+// Quien llega nuevo estrena un hogar vacio y empieza a apuntar lo suyo. Cuando
+// quiere compartirlo, llama a la otra persona POR CORREO, y solo se puede
+// llamar a quien ya entro alguna vez: el token trae un identificador opaco,
+// nadie invita a su pareja escribiendo un oid. De ahi el indice de correos.
+//
+// Y por eso la otra persona tiene que estar antes: al aceptar, lo que ya haya
+// apuntado por su cuenta se consolida en el hogar que la invita.
+
+const MIEMBROS_MAX = 2;
+
+function normalizarCorreo(c) {
+  return String(c || '').trim().toLowerCase();
+}
+
+/**
+ * Apunta que este correo es de esta identidad. Devuelve si hubo cambio, para
+ * no reescribir el mapa en cada peticion.
+ *
+ * Si la misma direccion entra por las dos puertas, gana la ultima: son dos
+ * identidades distintas para el directorio, y la invitacion tiene que ir a la
+ * que esta usando la aplicacion ahora.
+ */
+function anotarCorreo(mapa, clave, correo) {
+  if (!correo) return false;
+  mapa.correos = mapa.correos || {};
+  if (mapa.correos[correo] === clave) return false;
+  mapa.correos[correo] = clave;
+  return true;
+}
+
+function miembrosDe(mapa, hogarId) {
+  return Object.keys(mapa.usuarios).filter(k => mapa.usuarios[k] === hogarId);
+}
+
+function correoDe(mapa, clave) {
+  const correos = mapa.correos || {};
+  return Object.keys(correos).find(c => correos[c] === clave) || null;
+}
+
+/** Guarda la llamada. Los errores son codigos: el cliente explica cada uno. */
+async function invitar(req, correoCrudo) {
+  const clave = claveDeUsuario(req.user);
+  const correo = normalizarCorreo(correoCrudo);
+  if (!clave) return { error: 'sin_identidad' };
+  if (!correo || !correo.includes('@')) return { error: 'correo_invalido' };
+  if (normalizarCorreo(correoDelToken(req.user)) === correo) return { error: 'eres_tu' };
+
+  const mapa = await leerHogares();
+  const hogarId = mapa.usuarios[clave];
+  if (!hogarId || !mapa.hogares[hogarId]) return { error: 'sin_hogar' };
+
+  const miembros = miembrosDe(mapa, hogarId);
+  const claveInvitada = (mapa.correos || {})[correo];
+  // Solo se llama a quien ya tiene cuenta. Guardar la invitacion a ciegas
+  // dejaria a quien invita esperando a alguien que quiza nunca se registre y
+  // sin forma de saberlo; asi el aviso es inmediato y dice que hacer.
+  if (!claveInvitada) return { error: 'sin_cuenta' };
+  // «Ya esta dentro» va antes que «esta lleno»: un hogar de dos siempre esta
+  // lleno, y contestar eso a quien reinvita a su pareja despista en vez de
+  // explicar.
+  if (miembros.includes(claveInvitada)) return { error: 'ya_es_miembro' };
+  if (miembros.length >= MIEMBROS_MAX) return { error: 'hogar_lleno' };
+
+  const hogar = mapa.hogares[hogarId];
+  hogar.invitaciones = (hogar.invitaciones || []).filter(i => i.correo !== correo);
+  hogar.invitaciones.push({ correo, invitadoPor: clave, creada: new Date().toISOString() });
+  await guardarHogares(mapa);
+  console.log(`[hogares] ${hogarId} llama a ${correo}`);
+  return { hogarId, correo };
+}
+
+/** Las invitaciones dirigidas a quien pregunta. */
+async function invitacionesPara(req, mapaDado) {
+  const correo = normalizarCorreo(correoDelToken(req.user));
+  if (!correo) return [];
+  const mapa = mapaDado || await leerHogares();
+  return Object.keys(mapa.hogares)
+    .map(id => {
+      const inv = (mapa.hogares[id].invitaciones || []).find(i => i.correo === correo);
+      return inv ? { hogarId: id, nombre: mapa.hogares[id].nombre, de: correoDe(mapa, inv.invitadoPor), creada: inv.creada } : null;
+    })
+    .filter(Boolean);
+}
+
+// Lo que se une al fusionar. 'users' queda fuera a proposito: es la lista de
+// cuentas locales heredada, con sus contraseñas, y mezclarla cruzaria
+// credenciales de dos personas que solo querian juntar sus gastos.
+const LISTAS_FUSIONABLES = [
+  'transactions', 'accounts', 'budgets', 'goals',
+  'investments', 'recurring', 'autosave', 'dismissedSubscriptions',
+];
+
+/** El id de un elemento; dismissedSubscriptions son ids sueltos, no objetos. */
+function idDe(x) {
+  return x && typeof x === 'object' ? x.id : x;
+}
+
+function unir(a, b) {
+  const salida = a.slice();
+  const vistos = new Set(a.map(idDe).filter(v => v !== undefined));
+  for (const item of b) {
+    const id = idDe(item);
+    // Sin id no hay forma de saber si ya estaba, asi que entra igual: un
+    // movimiento repetido se ve y se borra, uno perdido no se nota.
+    if (id === undefined || !vistos.has(id)) {
+      salida.push(item);
+      if (id !== undefined) vistos.add(id);
+    }
+  }
+  return salida;
+}
+
+/** Une lo del invitado dentro de lo del anfitrion. En choque de id, manda el anfitrion. */
+function fusionarDatos(anfitrion, invitado) {
+  const salida = { ...anfitrion };
+  for (const lista of LISTAS_FUSIONABLES) {
+    salida[lista] = unir(
+      Array.isArray(anfitrion[lista]) ? anfitrion[lista] : [],
+      Array.isArray(invitado[lista]) ? invitado[lista] : []
+    );
+  }
+  return salida;
+}
+
+/**
+ * Vuelca los datos del hogar de origen en el de destino.
+ *
+ * El archivo de origen no se toca: queda como estaba, y es el respaldo de quien
+ * se muda. Antes de escribir el del anfitrion se guarda una copia fechada, y
+ * despues se relee para comprobar que esta TODO lo de los dos. Si falta algo,
+ * se restaura y la fusion no ocurre: es dinero de dos personas y no hay deshacer.
+ */
+async function consolidar(origenId, destinoId) {
+  const archivoDestino = archivoDeHogar(destinoId);
+
+  let origen;
+  try {
+    origen = JSON.parse(await fs.readFile(archivoDeHogar(origenId), 'utf8'));
+  } catch {
+    return { fusionadas: 0 }; // nunca guardo nada: no hay que consolidar nada
+  }
+
+  let destino;
+  try {
+    destino = JSON.parse(await fs.readFile(archivoDestino, 'utf8'));
+  } catch {
+    return { error: 'destino_ilegible' };
+  }
+
+  const unido = fusionarDatos(destino, origen);
+  const respaldo = path.join(HOGARES_DIR, destinoId, `antes-de-fusionar-${Date.now()}.json`);
+  await fs.writeFile(respaldo, JSON.stringify(destino, null, 2));
+  await fs.writeFile(archivoDestino, JSON.stringify(unido, null, 2));
+
+  try {
+    const escrito = JSON.parse(await fs.readFile(archivoDestino, 'utf8'));
+    for (const lista of LISTAS_FUSIONABLES) {
+      const esperados = new Set(
+        [...(destino[lista] || []), ...(origen[lista] || [])].map(idDe).filter(v => v !== undefined)
+      );
+      const presentes = new Set((escrito[lista] || []).map(idDe));
+      for (const id of esperados) {
+        if (!presentes.has(id)) throw new Error(`falta ${id} en ${lista}`);
+      }
+    }
+    const fusionadas = (origen.transactions || []).length;
+    console.log(`[hogares] fusion verificada: ${destinoId} recibe ${fusionadas} transacciones de ${origenId}`);
+    return { fusionadas };
+  } catch (err) {
+    await fs.writeFile(archivoDestino, JSON.stringify(destino, null, 2));
+    console.error('[hogares] fusion abortada, el hogar anfitrion queda como estaba:', err.message);
+    return { error: 'fusion_fallida' };
+  }
+}
+
+/** Aceptar es mudarse: cambia de hogar y se lleva lo suyo. */
+async function aceptarInvitacion(req, destinoId) {
+  const clave = claveDeUsuario(req.user);
+  const correo = normalizarCorreo(correoDelToken(req.user));
+  if (!clave || !correo) return { error: 'sin_identidad' };
+
+  const mapa = await leerHogares();
+  const destino = mapa.hogares[destinoId];
+  if (!destino) return { error: 'no_existe' };
+  if (!(destino.invitaciones || []).some(i => i.correo === correo)) return { error: 'no_invitado' };
+
+  const propioId = mapa.usuarios[clave];
+  if (propioId === destinoId) return { error: 'ya_es_miembro' };
+  if (miembrosDe(mapa, destinoId).length >= MIEMBROS_MAX) return { error: 'hogar_lleno' };
+
+  let fusionadas = 0;
+  if (propioId && mapa.hogares[propioId]) {
+    const r = await consolidar(propioId, destinoId);
+    if (r.error) return r;
+    fusionadas = r.fusionadas;
+    // El hogar de origen no se borra ni se reutiliza: queda marcado y con sus
+    // datos, que es lo unico que permite volver atras si algo salio mal.
+    mapa.hogares[propioId].absorbidoPor = destinoId;
+    mapa.hogares[propioId].fusionado = new Date().toISOString();
+  }
+
+  mapa.usuarios[clave] = destinoId;
+  destino.invitaciones = (destino.invitaciones || []).filter(i => i.correo !== correo);
+  await guardarHogares(mapa);
+  console.log(`[hogares] ${correo} se muda a ${destinoId} (${fusionadas} transacciones)`);
+  return { hogarId: destinoId, fusionadas };
+}
+
+async function rechazarInvitacion(req, destinoId) {
+  const correo = normalizarCorreo(correoDelToken(req.user));
+  if (!correo) return { error: 'sin_identidad' };
+  const mapa = await leerHogares();
+  const destino = mapa.hogares[destinoId];
+  if (!destino) return { error: 'no_existe' };
+  destino.invitaciones = (destino.invitaciones || []).filter(i => i.correo !== correo);
+  await guardarHogares(mapa);
+  return { hogarId: destinoId };
 }
 
 /**
@@ -207,26 +433,33 @@ const EXTERNAL_SUBDOMAIN = process.env.EXTERNAL_SUBDOMAIN;
 const EXTERNAL_ENABLED = Boolean(EXTERNAL_TENANT_ID && EXTERNAL_CLIENT_ID && EXTERNAL_SUBDOMAIN);
 
 /**
- * Quien puede entrar, por correo, separado por comas.
+ * Quien puede entrar, por correo, separado por comas. OPCIONAL.
  *
- * Hasta ahora la lista era el tenant: solo dos cuentas del directorio privado
- * podian pedir un token, asi que validar el emisor bastaba como autorizacion.
- * Abrir un tenant externo con registro libre rompe justo eso, porque cualquiera
- * con un Gmail puede conseguir un token valido.
+ * Cuando escribi esta lista, un data.json unico era de quien consiguiera un
+ * token: abrir un tenant externo con registro libre habria entregado las
+ * finanzas de la pareja a cualquiera con un Gmail. La lista era el unico
+ * candado, y por eso fallaba cerrada.
  *
- * Por eso los tokens del tenant externo EXIGEN lista: sin ella no entra nadie
- * por esa puerta. Abrirla tiene que ser un acto explicito, no el efecto
- * colateral de configurar el login.
+ * La particion por hogares cambio eso de raiz. Quien llega nuevo estrena un
+ * hogar vacio y no ve un sol ajeno, ni podria: el hogar se resuelve desde su
+ * identidad, no desde lo que pida. La lista ya no protege datos --solo limita
+ * quien puede abrirse una cuenta en este servidor-- asi que pasa a ser
+ * opcional: con lista, registro cerrado; sin lista, registro abierto.
+ *
+ * Es un cambio de significado de la MISMA variable, que es justo el tipo de
+ * cosa que muerde en silencio. Por eso el arranque dice en voz alta cual de
+ * los dos modos quedo activo.
  */
 const ALLOWED_USERS = (process.env.ALLOWED_USERS || '')
   .split(',')
   .map(c => c.trim().toLowerCase())
   .filter(Boolean);
 
-if (EXTERNAL_ENABLED && ALLOWED_USERS.length === 0) {
-  console.warn(
-    '[auth] EXTERNAL_* configurado pero ALLOWED_USERS vacio: ' +
-    'no se aceptara ningun inicio de sesion externo. Anade los correos permitidos.'
+if (EXTERNAL_ENABLED) {
+  console.log(
+    ALLOWED_USERS.length === 0
+      ? '[auth] registro ABIERTO: cualquiera puede crear cuenta y estrena un hogar vacio.'
+      : `[auth] registro CERRADO a ${ALLOWED_USERS.length} correo(s) de ALLOWED_USERS.`
   );
 }
 
@@ -237,14 +470,14 @@ const EMISORES = [
     issuer: `https://login.microsoftonline.com/${TENANT_ID}/v2.0`,
     audiencia: CLIENT_ID,
     jwksUri: `https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`,
-    exigeLista: false,
+    sujetoALista: false,
   },
   ...(EXTERNAL_ENABLED ? [{
     nombre: 'externo',
     issuer: `https://${EXTERNAL_TENANT_ID}.ciamlogin.com/${EXTERNAL_TENANT_ID}/v2.0`,
     audiencia: EXTERNAL_CLIENT_ID,
     jwksUri: `https://${EXTERNAL_SUBDOMAIN}.ciamlogin.com/${EXTERNAL_TENANT_ID}/discovery/v2.0/keys`,
-    exigeLista: true,
+    sujetoALista: true,
   }] : []),
 ];
 
@@ -263,7 +496,8 @@ function correoDelToken(t) {
 }
 
 function permitido(decoded, emisor) {
-  if (!emisor.exigeLista) return true;
+  if (!emisor.sujetoALista) return true;       // el directorio de trabajo ya es la lista
+  if (ALLOWED_USERS.length === 0) return true; // registro abierto
   const correo = correoDelToken(decoded);
   return Boolean(correo) && ALLOWED_USERS.includes(correo);
 }
@@ -513,11 +747,70 @@ app.post('/api/hogar', async (req, res) => {
   }
 });
 
-// Que hogar tengo, si tengo. El cliente lo usa para decidir entre entrar o
-// mostrar el alta, sin provocar un 409 a proposito.
+// Que hogar tengo, si tengo, y quien me esta llamando al suyo. El cliente lo
+// usa para decidir entre entrar, mostrar el alta o mostrar la invitacion, sin
+// provocar un 409 a proposito.
 app.get('/api/hogar', async (req, res) => {
-  const id = await hogarDe(req);
-  res.json({ hogarId: id, correo: correoDelToken(req.user) || null });
+  try {
+    const id = await hogarDe(req);
+    const mapa = await leerHogares();
+    const hogar = id ? mapa.hogares[id] : null;
+    res.json({
+      hogarId: id,
+      correo: correoDelToken(req.user) || null,
+      nombre: hogar ? hogar.nombre : null,
+      // Los correos de quienes lo comparten, para que la pantalla de Pareja
+      // diga quien esta dentro en vez de pedir que lo escriban a mano.
+      miembros: id ? miembrosDe(mapa, id).map(k => correoDe(mapa, k)).filter(Boolean) : [],
+      enviadas: hogar ? (hogar.invitaciones || []).map(i => i.correo) : [],
+      invitaciones: await invitacionesPara(req, mapa),
+    });
+  } catch (err) {
+    console.error('[hogares] consulta fallida:', err.message);
+    res.status(500).json({ error: 'No se pudo consultar el hogar' });
+  }
+});
+
+// Cada codigo de error dice algo distinto al usuario, asi que se traducen aqui
+// una sola vez y el cliente solo elige el texto.
+const ESTADO_INVITACION = {
+  correo_invalido: 400, eres_tu: 400, sin_identidad: 400,
+  sin_hogar: 409, hogar_lleno: 409, ya_es_miembro: 409,
+  sin_cuenta: 404, no_existe: 404, no_invitado: 403,
+  destino_ilegible: 500, fusion_fallida: 500,
+};
+
+app.post('/api/hogar/invitacion', async (req, res) => {
+  try {
+    const r = await invitar(req, req.body && req.body.correo);
+    if (r.error) return res.status(ESTADO_INVITACION[r.error] || 400).json({ codigo: r.error });
+    res.json(r);
+  } catch (err) {
+    console.error('[hogares] invitacion fallida:', err.message);
+    res.status(500).json({ error: 'No se pudo enviar la invitacion' });
+  }
+});
+
+app.post('/api/hogar/invitacion/aceptar', async (req, res) => {
+  try {
+    const r = await aceptarInvitacion(req, req.body && req.body.hogarId);
+    if (r.error) return res.status(ESTADO_INVITACION[r.error] || 400).json({ codigo: r.error });
+    res.json(r);
+  } catch (err) {
+    console.error('[hogares] fusion fallida:', err.message);
+    res.status(500).json({ error: 'No se pudo unir al hogar' });
+  }
+});
+
+app.post('/api/hogar/invitacion/rechazar', async (req, res) => {
+  try {
+    const r = await rechazarInvitacion(req, req.body && req.body.hogarId);
+    if (r.error) return res.status(ESTADO_INVITACION[r.error] || 400).json({ codigo: r.error });
+    res.json(r);
+  } catch (err) {
+    console.error('[hogares] rechazo fallido:', err.message);
+    res.status(500).json({ error: 'No se pudo rechazar la invitacion' });
+  }
 });
 
 app.get('/api/data', async (req, res) => {
@@ -1076,6 +1369,8 @@ module.exports = {
   correoDelToken, permitido, EMISORES,
   claveDeUsuario, leerHogares, guardarHogares, archivoDeHogar,
   migrarAHogares, hogarDe, crearHogar,
+  invitar, invitacionesPara, aceptarInvitacion, rechazarInvitacion,
+  fusionarDatos, consolidar, miembrosDe,
 };
 
 // Start server

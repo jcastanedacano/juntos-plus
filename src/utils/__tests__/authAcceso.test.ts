@@ -1,11 +1,30 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 
 // El servidor es CommonJS; se importan solo los helpers puros de autorizacion.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { correoDelToken, permitido } = require('../../../server.cjs');
 
-const externo = { nombre: 'externo', exigeLista: true };
-const trabajo = { nombre: 'trabajo', exigeLista: false };
+const externo = { nombre: 'externo', sujetoALista: true };
+const trabajo = { nombre: 'trabajo', sujetoALista: false };
+
+/**
+ * ALLOWED_USERS se lee al cargar el modulo, asi que probar el modo cerrado
+ * exige recargarlo con la variable puesta.
+ */
+function cargarConLista(lista: string) {
+  process.env.ALLOWED_USERS = lista;
+  const ruta = require.resolve('../../../server.cjs');
+  delete require.cache[ruta];
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  return require('../../../server.cjs');
+}
+
+const ALLOWED_ORIGINAL = process.env.ALLOWED_USERS;
+afterEach(() => {
+  if (ALLOWED_ORIGINAL === undefined) delete process.env.ALLOWED_USERS;
+  else process.env.ALLOWED_USERS = ALLOWED_ORIGINAL;
+  delete require.cache[require.resolve('../../../server.cjs')];
+});
 
 describe('de donde sale el correo del token', () => {
   it('lee preferred_username, email o upn, en ese orden', () => {
@@ -21,20 +40,28 @@ describe('de donde sale el correo del token', () => {
 });
 
 describe('quien puede entrar', () => {
-  it('el tenant de trabajo no exige lista: el directorio ya es la lista', () => {
+  it('el tenant de trabajo no mira la lista: el directorio ya es la lista', () => {
     expect(permitido({ preferred_username: 'quien@sea.com' }, trabajo)).toBe(true);
     expect(permitido({}, trabajo)).toBe(true);
   });
 
-  // Lo que sigue es la razon de ser de todo esto: con registro libre en el
-  // tenant externo, cualquiera consigue un token valido. Si la lista fallara
-  // abierta, un Gmail cualquiera leeria las finanzas de la pareja.
-  it('un token externo sin lista configurada NO entra', () => {
-    expect(permitido({ preferred_username: 'desconocido@gmail.com' }, externo)).toBe(false);
+  // La lista dejo de ser el candado de los datos el dia que cada quien tiene su
+  // hogar: sin lista, cualquiera entra, y lo que ve es un hogar vacio suyo.
+  it('sin lista configurada, el registro esta abierto', () => {
+    expect(permitido({ preferred_username: 'desconocida@gmail.com' }, externo)).toBe(true);
   });
 
-  it('un token externo sin correo tampoco entra', () => {
-    expect(permitido({ sub: 'oid-suelto' }, externo)).toBe(false);
-    expect(permitido({ preferred_username: '' }, externo)).toBe(false);
+  it('con lista configurada, solo entra quien esta en ella', () => {
+    const s = cargarConLista('ana@gmail.com, Beto@Gmail.com');
+    expect(s.permitido({ preferred_username: 'ana@gmail.com' }, externo)).toBe(true);
+    // La lista se normaliza al leerla, asi que las mayusculas no dejan a nadie fuera.
+    expect(s.permitido({ preferred_username: 'beto@gmail.com' }, externo)).toBe(true);
+    expect(s.permitido({ preferred_username: 'otro@gmail.com' }, externo)).toBe(false);
+  });
+
+  it('con lista, un token sin correo no entra', () => {
+    const s = cargarConLista('ana@gmail.com');
+    expect(s.permitido({ sub: 'oid-suelto' }, externo)).toBe(false);
+    expect(s.permitido({ preferred_username: '' }, externo)).toBe(false);
   });
 });

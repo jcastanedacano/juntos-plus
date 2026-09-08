@@ -2,7 +2,19 @@ import { useMsal } from '@azure/msal-react';
 import {
   loginRequest, readLoginHint, AUTORIDAD_EXTERNA, LOGIN_EXTERNO_ACTIVO,
 } from '../auth/msalConfig';
-import { Shield, TrendingUp, PiggyBank, BarChart3, CreditCard, AtSign } from 'lucide-react';
+import { Shield, TrendingUp, PiggyBank, BarChart3, CreditCard, Mail } from 'lucide-react';
+
+/** La G de Google, con sus colores. Es una marca ajena: se dibuja tal cual. */
+function MarcaGoogle() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.1-3.8 6.6-9.4 6.6-16.1z" />
+      <path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.5-3.8-12.2-9H4.5v5.7C8.1 41.1 15.5 46 24 46z" />
+      <path fill="#FBBC05" d="M11.8 28.2c-.4-1.3-.7-2.7-.7-4.2s.2-2.9.7-4.2v-5.7H4.5C3 17.1 2.1 20.4 2.1 24s.9 6.9 2.4 9.9l7.3-5.7z" />
+      <path fill="#EA4335" d="M24 10.8c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.2 29.9 2 24 2 15.5 2 8.1 6.9 4.5 14.1l7.3 5.7c1.7-5.2 6.5-9 12.2-9z" />
+    </svg>
+  );
+}
 
 export function LoginPage() {
   const { instance } = useMsal();
@@ -21,9 +33,20 @@ export function LoginPage() {
   // la peticion y no en la configuracion: la misma aplicacion atiende las dos
   // puertas. Sin loginHint a proposito: quien entra por aqui puede venir de
   // Google o de un correo suelto, y el hint guardado es del otro directorio.
-  const handleLoginExterno = () => {
-    instance.loginRedirect({ ...loginRequest, authority: AUTORIDAD_EXTERNA });
+  const entrarPorFuera = (extra?: Record<string, string>) => {
+    instance.loginRedirect({
+      ...loginRequest,
+      authority: AUTORIDAD_EXTERNA,
+      ...(extra ? { extraQueryParameters: extra } : {}),
+    });
   };
+
+  // domain_hint salta directo a Google sin pasar por el selector; prompt=create
+  // abre el registro en vez del inicio de sesion. Los dos son pistas: si el
+  // flujo no las reconoce, se cae al formulario normal en vez de fallar.
+  const conGoogle = () => entrarPorFuera({ domain_hint: 'google.com' });
+  const conCorreo = () => entrarPorFuera();
+  const registrarse = () => entrarPorFuera({ prompt: 'create' });
 
   return (
     <div className="login-page">
@@ -64,10 +87,25 @@ export function LoginPage() {
           {LOGIN_EXTERNO_ACTIVO && (
             <>
               <div className="login-sep"><span>o</span></div>
-              <button className="login-btn login-btn-alt" onClick={handleLoginExterno}>
-                <AtSign size={20} />
-                <span>Entrar con Google u otro correo</span>
+
+              <button className="login-btn login-btn-google" onClick={conGoogle}>
+                <MarcaGoogle />
+                <span>Continuar con Google</span>
               </button>
+
+              <button className="login-btn login-btn-alt" onClick={conCorreo}>
+                <Mail size={18} />
+                <span>Continuar con tu correo</span>
+              </button>
+
+              {/* Registrarse no es lo mismo que entrar, asi que no compite como
+                  boton: es la salida para quien todavia no tiene cuenta. */}
+              <p className="login-registro">
+                ¿Primera vez?{' '}
+                <button type="button" className="login-enlace" onClick={registrarse}>
+                  Crea tu cuenta
+                </button>
+              </p>
             </>
           )}
 

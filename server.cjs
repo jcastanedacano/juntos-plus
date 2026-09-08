@@ -13,6 +13,152 @@ app.use(compression());
 const PORT = process.env.PORT || 3007;
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
+const HOGARES_FILE = path.join(DATA_DIR, 'hogares.json');
+const HOGARES_DIR = path.join(DATA_DIR, 'hogares');
+
+// ─── Hogares ────────────────────────────────────────────────────────
+//
+// Un hogar es dueño de un data.json. Tiene uno o dos miembros, que ven
+// exactamente lo mismo: es lo que hace que la aplicacion sea «Juntos» y no dos
+// cuentas separadas. Aislar por usuario habria partido a la pareja.
+//
+// Quien entra por el directorio de trabajo cae en el hogar migrado, porque ese
+// directorio ES la pareja: son las dos unicas cuentas que existen ahi. Quien
+// entra por el tenant externo nunca se une a un hogar ajeno; estrena el suyo,
+// vacio.
+
+/** Identidad estable del usuario dentro de su directorio. */
+function claveDeUsuario(u) {
+  return String((u && (u.oid || u.sub)) || '').trim();
+}
+
+async function leerHogares() {
+  try {
+    return JSON.parse(await fs.readFile(HOGARES_FILE, 'utf8'));
+  } catch {
+    return { usuarios: {}, hogares: {} };
+  }
+}
+
+async function guardarHogares(mapa) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(HOGARES_FILE, JSON.stringify(mapa, null, 2));
+}
+
+function archivoDeHogar(id) {
+  return path.join(HOGARES_DIR, id, 'data.json');
+}
+
+/**
+ * Mueve el data.json unico al primer hogar. Se ejecuta una vez y solo si aun
+ * no hay hogares: si algo falla a mitad, el original sigue donde estaba.
+ *
+ * El archivo viejo NO se borra. Es el respaldo de una migracion sobre datos
+ * financieros reales, y ocupa lo que ocupa.
+ */
+async function migrarAHogares() {
+  const mapa = await leerHogares();
+  if (Object.keys(mapa.hogares).length > 0) return mapa;
+
+  let original = null;
+  try {
+    original = await fs.readFile(DATA_FILE, 'utf8');
+    JSON.parse(original); // no migrar un archivo corrupto
+  } catch {
+    return mapa; // instalacion nueva: no hay nada que migrar
+  }
+
+  const id = 'principal';
+  await fs.mkdir(path.join(HOGARES_DIR, id), { recursive: true });
+  await fs.writeFile(archivoDeHogar(id), original);
+
+  // Releer y contar antes de dar la migracion por buena. Un disco lleno o un
+  // corte a mitad de escritura dejan un archivo truncado que parece existir;
+  // sobre datos financieros eso no se asume, se comprueba. Si no cuadra, se
+  // retira la copia y el original sigue siendo el bueno.
+  try {
+    const copia = JSON.parse(await fs.readFile(archivoDeHogar(id), 'utf8'));
+    const antes = (JSON.parse(original).transactions || []).length;
+    const despues = (copia.transactions || []).length;
+    if (antes !== despues) throw new Error(`${antes} transacciones antes, ${despues} despues`);
+    console.log(`[hogares] copia verificada: ${despues} transacciones`);
+  } catch (err) {
+    await fs.rm(path.join(HOGARES_DIR, id), { recursive: true, force: true }).catch(() => {});
+    console.error('[hogares] migracion abortada, el original queda intacto:', err.message);
+    return mapa;
+  }
+
+  mapa.hogares[id] = {
+    nombre: 'Nuestro hogar',
+    creado: new Date().toISOString(),
+    origen: 'migracion',
+    // Quien llegue por el directorio de trabajo entra aqui. Es lo que preserva
+    // el comportamiento de siempre para la pareja que ya usaba la aplicacion,
+    // sin pedirle que configure nada.
+    abiertoAlDirectorio: true,
+  };
+  await guardarHogares(mapa);
+  console.log(`[hogares] migrado data.json -> ${archivoDeHogar(id)} (el original se conserva)`);
+  return mapa;
+}
+
+/** El hogar del solicitante, o null si todavia no tiene. */
+async function hogarDe(req) {
+  const clave = claveDeUsuario(req.user);
+  if (!clave) return null;
+
+  const mapa = await leerHogares();
+  if (mapa.usuarios[clave] && mapa.hogares[mapa.usuarios[clave]]) {
+    return mapa.usuarios[clave];
+  }
+
+  if (req.emisor === 'trabajo') {
+    const abierto = Object.keys(mapa.hogares).find(id => mapa.hogares[id].abiertoAlDirectorio);
+    if (abierto) {
+      mapa.usuarios[clave] = abierto;
+      await guardarHogares(mapa);
+      console.log(`[hogares] ${correoDelToken(req.user) || clave} se une a ${abierto} por el directorio`);
+      return abierto;
+    }
+  }
+
+  return null;
+}
+
+/** Crea un hogar vacio y mete dentro a quien lo pide. */
+async function crearHogar(req, nombre) {
+  const clave = claveDeUsuario(req.user);
+  if (!clave) return null;
+  const mapa = await leerHogares();
+  const id = 'h_' + Math.random().toString(36).slice(2, 10);
+  await fs.mkdir(path.join(HOGARES_DIR, id), { recursive: true });
+  await fs.writeFile(archivoDeHogar(id), JSON.stringify(EMPTY_DATA, null, 2));
+  mapa.hogares[id] = {
+    nombre: (nombre || '').trim() || 'Mi hogar',
+    creado: new Date().toISOString(),
+    origen: 'alta',
+    abiertoAlDirectorio: false,
+  };
+  mapa.usuarios[clave] = id;
+  await guardarHogares(mapa);
+  return id;
+}
+
+/**
+ * Resuelve el hogar y deja su archivo en req. Un 409 y no un 404: la peticion
+ * es correcta, lo que falta es un paso previo del usuario, y el cliente
+ * distingue por el codigo para enseñar el alta en vez de un error.
+ */
+async function conHogar(req, res) {
+  const id = await hogarDe(req);
+  if (!id) {
+    res.status(409).json({ error: 'Todavia no tienes un hogar', codigo: 'sin_hogar' });
+    return null;
+  }
+  req.hogarId = id;
+  req.archivo = archivoDeHogar(id);
+  return id;
+}
 const META_FILE = path.join(DATA_DIR, 'data.meta.json');
 const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
 const BACKUP_RETENTION_DAYS = 30;
@@ -237,52 +383,30 @@ app.get('/healthz', async (req, res) => {
 // Auth middleware on ALL API operations (including GET)
 app.use('/api', authMiddleware);
 
-// Initialize data file if it doesn't exist
-async function initDataFile() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.access(DATA_FILE);
-  } catch {
-    const initialData = {
-      transactions: [],
-      accounts: [{
-        id: 'default',
-        name: 'Cuenta Principal',
-        balance: 0,
-        color: '#00D1B2',
-        icon: '🏦',
-        type: 'debit',
-      }],
-      budgets: [],
-      currency: 'PEN',
-      user: null,
-      users: [],
-      goals: [],
-      investments: [],
-      recurring: [],
-      autosave: [],
-    };
-    await fs.writeFile(DATA_FILE, JSON.stringify(initialData, null, 2));
-  }
-}
 
 // ─── Version tracking (multi-device sync + optimistic concurrency) ───
 // Kept in a separate meta file so it never has to be merged into the
 // AppData blob the client reads, and a version bump can never corrupt data.
-async function readMeta() {
+// La version es por hogar: es el numero que usan los dispositivos para saber
+// si tienen datos frescos, y compartirlo entre hogares haria que el cambio de
+// uno invalidara la cache del otro.
+function archivoMeta(hogarId) {
+  return hogarId ? path.join(HOGARES_DIR, hogarId, 'data.meta.json') : META_FILE;
+}
+
+async function readMeta(hogarId) {
   try {
-    const raw = await fs.readFile(META_FILE, 'utf8');
-    return JSON.parse(raw);
+    return JSON.parse(await fs.readFile(archivoMeta(hogarId), 'utf8'));
   } catch {
     return { version: 0, updatedAt: new Date(0).toISOString() };
   }
 }
 
-async function bumpVersion() {
-  const meta = await readMeta();
+async function bumpVersion(hogarId) {
+  const meta = await readMeta(hogarId);
   const next = { version: (meta.version || 0) + 1, updatedAt: new Date().toISOString() };
   try {
-    await fs.writeFile(META_FILE, JSON.stringify(next, null, 2));
+    await fs.writeFile(archivoMeta(hogarId), JSON.stringify(next, null, 2));
   } catch (err) {
     console.warn('[meta] version bump write failed:', err.code || err.message);
   }
@@ -293,18 +417,22 @@ async function bumpVersion() {
 // Runs before every write. Copies the CURRENT (pre-write) data.json into
 // backups/ once per calendar day, so a bad write or an accidental empty
 // overwrite can always be recovered from the prior day's snapshot.
-async function dailyBackup() {
+async function dailyBackup(hogarId) {
+  const archivo = hogarId ? archivoDeHogar(hogarId) : DATA_FILE;
   try {
     await fs.mkdir(BACKUPS_DIR, { recursive: true });
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const backupFile = path.join(BACKUPS_DIR, `data_${today}.json`);
+    // El hogar entra en el nombre: con un solo archivo por dia, el segundo
+    // hogar que escribiera se llevaria por delante el respaldo del primero.
+    const sufijo = hogarId ? `_${hogarId}` : '';
+    const backupFile = path.join(BACKUPS_DIR, `data${sufijo}_${today}.json`);
     try {
       await fs.access(backupFile);
       return; // already backed up today
     } catch {
       // no backup yet today — proceed
     }
-    const current = await fs.readFile(DATA_FILE, 'utf8');
+    const current = await fs.readFile(archivo, 'utf8');
     JSON.parse(current); // don't propagate a backup of corrupt JSON
     await fs.writeFile(backupFile, current);
     await rotateBackups();
@@ -322,7 +450,7 @@ async function rotateBackups() {
     const files = await fs.readdir(BACKUPS_DIR);
     const cutoff = Date.now() - BACKUP_RETENTION_DAYS * 24 * 60 * 60 * 1000;
     for (const file of files) {
-      const match = file.match(/^data_(\d{4}-\d{2}-\d{2})\.json$/);
+      const match = file.match(/^data(?:_.+?)?_(\d{4}-\d{2}-\d{2})\.json$/);
       if (!match) continue;
       const fileDate = new Date(match[1]).getTime();
       if (fileDate < cutoff) {
@@ -368,10 +496,35 @@ const EMPTY_DATA = {
   dismissedSubscriptions: [],
 };
 
+// Alta de hogar. Quien llega sin uno --siempre alguien del tenant externo--
+// estrena el suyo, vacio. Nunca se une a uno existente por su cuenta: eso
+// tiene que venir de una invitacion.
+app.post('/api/hogar', async (req, res) => {
+  try {
+    const yaTiene = await hogarDe(req);
+    if (yaTiene) return res.json({ hogarId: yaTiene, creado: false });
+    const id = await crearHogar(req, req.body && req.body.nombre);
+    if (!id) return res.status(400).json({ error: 'Token sin identidad utilizable' });
+    console.log(`[hogares] ${correoDelToken(req.user) || id} estrena hogar ${id}`);
+    res.json({ hogarId: id, creado: true });
+  } catch (err) {
+    console.error('[hogares] alta fallida:', err.message);
+    res.status(500).json({ error: 'No se pudo crear el hogar' });
+  }
+});
+
+// Que hogar tengo, si tengo. El cliente lo usa para decidir entre entrar o
+// mostrar el alta, sin provocar un 409 a proposito.
+app.get('/api/hogar', async (req, res) => {
+  const id = await hogarDe(req);
+  res.json({ hogarId: id, correo: correoDelToken(req.user) || null });
+});
+
 app.get('/api/data', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   try {
-    const data = await fs.readFile(DATA_FILE, 'utf8');
+    if (!(await conHogar(req, res))) return;
+    const data = await fs.readFile(req.archivo, 'utf8');
     res.json(scrubUserPasswords(JSON.parse(data)));
   } catch (error) {
     // Fresh-install / persistent-volume-not-yet-populated → return empty
@@ -379,11 +532,11 @@ app.get('/api/data', async (req, res) => {
     // the file. Same for parse errors on a corrupt file: we surface the
     // shell rather than a hard error.
     if (error.code === 'ENOENT' || error instanceof SyntaxError) {
-      console.warn(`[api/data] ${error.code || 'parse_error'} on ${DATA_FILE}; returning empty shell`);
+      console.warn(`[api/data] ${error.code || 'parse_error'} on ${req.archivo}; returning empty shell`);
       // Best-effort: seed the file so future reads succeed.
       try {
-        await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-        await fs.writeFile(DATA_FILE, JSON.stringify(EMPTY_DATA, null, 2), 'utf8');
+        await fs.mkdir(path.dirname(req.archivo), { recursive: true });
+        await fs.writeFile(req.archivo, JSON.stringify(EMPTY_DATA, null, 2), 'utf8');
       } catch (seedErr) {
         console.warn('[api/data] seed write failed:', seedErr.code || seedErr.message);
       }
@@ -399,15 +552,16 @@ app.get('/api/data', async (req, res) => {
 // the full data blob.
 app.get('/api/data/version', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  const meta = await readMeta();
-  res.json(meta);
+  if (!(await conHogar(req, res))) return;
+  res.json(await readMeta(req.hogarId));
 });
 
 // Download the current data file as an attachment — manual backup button
 // in the UI, independent of the server's own daily rotation.
 app.get('/api/backup', async (req, res) => {
   try {
-    const data = await fs.readFile(DATA_FILE, 'utf8');
+    if (!(await conHogar(req, res))) return;
+    const data = await fs.readFile(req.archivo, 'utf8');
     const scrubbed = scrubUserPasswords(JSON.parse(data));
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     res.setHeader('Content-Disposition', `attachment; filename="juntos-backup_${stamp}.json"`);
@@ -422,6 +576,7 @@ app.get('/api/backup', async (req, res) => {
 // Update specific collection
 app.post('/api/data/:collection', async (req, res) => {
   try {
+    if (!(await conHogar(req, res))) return;
     const { collection } = req.params;
     let newData = req.body;
 
@@ -432,15 +587,15 @@ app.post('/api/data/:collection', async (req, res) => {
     if (collection === 'user') newData = stripPassword(newData);
     if (collection === 'users' && Array.isArray(newData)) newData = newData.map(stripPassword);
 
-    await dailyBackup();
+    await dailyBackup(req.hogarId);
 
-    const data = await fs.readFile(DATA_FILE, 'utf8');
+    const data = await fs.readFile(req.archivo, 'utf8');
     const allData = JSON.parse(data);
 
     allData[collection] = newData;
 
-    await fs.writeFile(DATA_FILE, JSON.stringify(allData, null, 2));
-    const meta = await bumpVersion();
+    await fs.writeFile(req.archivo, JSON.stringify(allData, null, 2));
+    const meta = await bumpVersion(req.hogarId);
     res.json({ success: true, data: allData[collection], version: meta.version });
   } catch (error) {
     console.error('Error updating data:', error);
@@ -490,14 +645,15 @@ function smartCategorize(description) {
 // ─── BCP Email Sync endpoint ───
 app.post('/api/sync-bcp', async (req, res) => {
   try {
+    if (!(await conHogar(req, res))) return;
     const { transactions: newTxs } = req.body;
     if (!Array.isArray(newTxs) || newTxs.length === 0) {
       return res.json({ success: true, imported: 0, message: 'No transactions to import' });
     }
 
-    await dailyBackup();
+    await dailyBackup(req.hogarId);
 
-    const data = JSON.parse(await fs.readFile(DATA_FILE, 'utf8'));
+    const data = JSON.parse(await fs.readFile(req.archivo, 'utf8'));
     const existingKeys = new Set(
       data.transactions.map(t => `${t.date}|${t.amount}|${t.type}|${t.description}`)
     );
@@ -552,8 +708,8 @@ app.post('/api/sync-bcp', async (req, res) => {
       }
     }
 
-    await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
-    const meta = await bumpVersion();
+    await fs.writeFile(req.archivo, JSON.stringify(data, null, 2));
+    const meta = await bumpVersion(req.hogarId);
     res.json({ success: true, imported, skipped, total: data.transactions.length, version: meta.version });
   } catch (error) {
     console.error('Error syncing BCP:', error);
@@ -564,10 +720,11 @@ app.post('/api/sync-bcp', async (req, res) => {
 // Update all data at once
 app.post('/api/data', async (req, res) => {
   try {
+    if (!(await conHogar(req, res))) return;
     const newData = scrubUserPasswords(req.body);
-    await dailyBackup();
-    await fs.writeFile(DATA_FILE, JSON.stringify(newData, null, 2));
-    const meta = await bumpVersion();
+    await dailyBackup(req.hogarId);
+    await fs.writeFile(req.archivo, JSON.stringify(newData, null, 2));
+    const meta = await bumpVersion(req.hogarId);
     res.json({ success: true, version: meta.version });
   } catch (error) {
     console.error('Error updating data:', error);
@@ -638,9 +795,11 @@ app.post('/api/push/subscribe', async (req, res) => {
   try {
     const store = await readPushSubs();
     const uid = userKey(req);
+    const hogarId = await hogarDe(req);
     const rest = store.subscriptions.filter(function (x) { return x.endpoint !== sub.endpoint; });
     rest.push({
       userId: uid,
+      hogarId: hogarId,
       endpoint: sub.endpoint,
       keys: sub.keys,
       createdAt: new Date().toISOString(),
@@ -772,14 +931,32 @@ async function runDailyDigest() {
     const today = limaDateStr();
     if (store.subscriptions.every(function (s) { return s.lastSentDate === today; })) return;
 
-    const data = JSON.parse(await fs.readFile(DATA_FILE, 'utf8'));
-    const payload = buildDigest(data);
-    if (!payload) return;
+    // Un resumen por hogar. Antes salia uno solo del archivo global; con los
+    // datos partidos, mandarselo a todos seria contarle a cada quien las
+    // cuentas de otro.
+    const payloadPorHogar = new Map();
+    async function payloadDe(hogarId) {
+      const clave = hogarId || '';
+      if (payloadPorHogar.has(clave)) return payloadPorHogar.get(clave);
+      let payload = null;
+      try {
+        const archivo = hogarId ? archivoDeHogar(hogarId) : DATA_FILE;
+        payload = buildDigest(JSON.parse(await fs.readFile(archivo, 'utf8')));
+      } catch (err) {
+        console.warn(`[push] sin datos para el hogar ${clave || '(global)'}:`, err.code || err.message);
+      }
+      payloadPorHogar.set(clave, payload);
+      return payload;
+    }
 
     const survivors = [];
     let sentCount = 0;
     for (const sub of store.subscriptions) {
       if (sub.lastSentDate === today) { survivors.push(sub); continue; }
+      const payload = await payloadDe(sub.hogarId);
+      // Sin datos que resumir la suscripcion se conserva: el fallo es del
+      // archivo de hoy, no del dispositivo.
+      if (!payload) { survivors.push(sub); continue; }
       const r = await sendTo(sub, payload);
       if (r === 'gone') continue;
       if (r === 'sent') sentCount++;
@@ -894,10 +1071,15 @@ app.use((req, res, next) => {
 // Exportado para poder probar la logica de fechas del resumen sin levantar
 // el servidor. El arranque queda detras de require.main para que importar
 // este archivo desde un test no abra un puerto.
-module.exports = { buildDigest, limaDateStr, addDaysStr, correoDelToken, permitido, EMISORES };
+module.exports = {
+  buildDigest, limaDateStr, addDaysStr,
+  correoDelToken, permitido, EMISORES,
+  claveDeUsuario, leerHogares, guardarHogares, archivoDeHogar,
+  migrarAHogares, hogarDe, crearHogar,
+};
 
 // Start server
-if (require.main === module) initDataFile().then(() => {
+if (require.main === module) migrarAHogares().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend server running on http://localhost:${PORT}`);
     console.log(`Available on network at http://0.0.0.0:${PORT}`);

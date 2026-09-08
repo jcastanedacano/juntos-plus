@@ -1,6 +1,6 @@
 import {
   LayoutDashboard,
-  Receipt,
+  ArrowLeftRight,
   Target,
   Wallet,
   RefreshCw,
@@ -37,7 +37,7 @@ interface SidebarProps {
 
 const navItems: { id: ViewType; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'transactions', label: 'Transacciones', icon: Receipt },
+  { id: 'transactions', label: 'Transacciones', icon: ArrowLeftRight },
   { id: 'recurring', label: 'Recurrentes', icon: RefreshCw },
   { id: 'subscriptions', label: 'Suscripciones', icon: Repeat },
   { id: 'savings', label: 'Ahorro', icon: PiggyBank },

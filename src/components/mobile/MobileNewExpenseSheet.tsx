@@ -5,6 +5,7 @@ import { es } from 'date-fns/locale';
 import { PaidBy, Transaction } from '../../types';
 import { toStableDateISO } from '../../utils/stableDate';
 import { useOwnerLabels } from '../../utils/ownerLabels';
+import { getMonedaBase, simboloDe } from '../../utils/fx';
 
 interface MobileNewExpenseSheetProps {
   onClose: () => void;
@@ -33,6 +34,10 @@ const MAX_CHARS = 8;
  * monto, la categoria y quien pago a la vez.
  */
 export function MobileNewExpenseSheet({ onClose, onSave, onMoreOptions }: MobileNewExpenseSheetProps) {
+  // El simbolo sale de la moneda del hogar. Estaba fijo en «S/», asi que en un
+  // hogar en euros la pantalla de registrar un gasto --la que mas se usa--
+  // pedia soles y guardaba euros.
+  const simbolo = simboloDe(getMonedaBase());
   const labels = useOwnerLabels();
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('food');
@@ -98,7 +103,7 @@ export function MobileNewExpenseSheet({ onClose, onSave, onMoreOptions }: Mobile
         </div>
 
         <div className={`cl-amount is-l ${amount ? 'filled' : ''}`}>
-          {amount ? `S/ ${amount}` : 'S/ 0.00'}
+          {amount ? `${simbolo} ${amount}` : `${simbolo} 0.00`}
         </div>
 
         <div className="cl-chips">

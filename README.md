@@ -26,9 +26,9 @@ no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 > [!NOTE]
 > Proyecto personal, publicado por si le sirve a alguien más. Está hecho para
 > el caso de uso de una pareja concreta y se nota: la interfaz está solo en
-> español, y la parte bancaria es peruana. Importa el PDF del BCP, entiende
-> Yape, y la tarjeta de crédito razona con TEA y cuotas. El resto de la
-> aplicación no depende de eso, pero esas pantallas sí.
+> español, los bancos que trae de fábrica son peruanos y la tarjeta de crédito
+> razona con TEA y cuotas. Añadir un banco es implementar dos funciones; el
+> resto de la aplicación no depende de eso.
 
 ---
 
@@ -40,7 +40,8 @@ no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 | **Movimientos** | La lista completa, agrupada por día, con búsqueda, filtros por tipo (variable, fijo, suscripción) y edición o borrado deslizando. |
 | **Recurrentes y suscripciones** | Detecta cargos que se repiten a partir de tus movimientos, avisa cuando cambia el precio, cuando falta un cobro y cuando hay duplicados. Pausa un recurrente automáticamente si registras el pago antes de tiempo, y lo reanuda solo al llegar la fecha. |
 | **Nosotros** | Reparto por persona de lo que ya está asignado, y una cola de movimientos sin autor para asignarlos rápido. |
-| **Tarjeta de crédito** | Utilización, fecha límite, ciclo, TEA, simulador de pago, estrategia de cuotas y proyección al cierre. Importa el PDF del estado de cuenta del BCP y lo parsea en el navegador. |
+| **Tarjeta de crédito** | Utilización, fecha límite, ciclo, TEA, simulador de pago, estrategia de cuotas y proyección al cierre. Lee el PDF del estado de cuenta del BCP en el navegador, sin subirlo a ningún sitio. |
+| **Importar del banco** | Un registro de parsers, no un formato único. Cada banco implementa `detect` y `parse`, y el archivo se enruta solo al que lo reconoce. Vienen cuatro: BCP/Yape, Interbank, BBVA y Scotiabank. Lo que no encaja queda registrado con sus cabeceras para poder añadirlo. |
 | **Hogares** | Los datos pertenecen a un hogar, no a una cuenta: sus dos personas ven exactamente lo mismo. Quien llega nuevo estrena el suyo, vacío, elige la moneda en la que lleva las cuentas, y para compartirlo llama a la otra persona por su correo. Al aceptar, lo que cada quien había apuntado por separado se une. |
 
 **Además:** presupuestos, metas de ahorro, patrimonio neto, recap anual,
@@ -112,6 +113,33 @@ React 18 · TypeScript · Vite · PWA con Workbox · Express · Recharts · MSAL
 (Microsoft Entra ID) · OAuth de Google con sesión propia · date-fns · Vitest.
 
 Sin base de datos: un archivo JSON y un candado de escritura.
+
+<details>
+<summary><b>Añadir tu banco</b></summary>
+
+<br />
+
+Los parsers viven en `src/data/bankParsers.ts` y el registro los prueba en
+orden hasta que uno reconoce el archivo. Un banco son dos funciones:
+
+```ts
+{
+  bankName: 'Tu Banco',
+  version: '1.0',
+  // ¿Es mío este archivo? Se decide por las cabeceras, no por el nombre.
+  detect: (headers) => headers.includes('Fecha') && headers.includes('Importe'),
+  parse: (headers, rows) => rows.map(fila => ({ /* ... */ })),
+}
+```
+
+Lo que no reconoce ningún parser no se pierde en silencio: queda registrado con
+sus cabeceras y el número de filas, para que sepas exactamente qué te falta
+soportar.
+
+De fábrica vienen BCP/Yape, Interbank, BBVA y Scotiabank, que son los que usa
+la pareja para la que se hizo esto.
+
+</details>
 
 <details>
 <summary><b>El registro en Entra ID</b></summary>

@@ -22,14 +22,39 @@ const HOGARES_DIR = path.join(DATA_DIR, 'hogares');
 // exactamente lo mismo: es lo que hace que la aplicacion sea «Juntos» y no dos
 // cuentas separadas. Aislar por usuario habria partido a la pareja.
 //
-// Quien entra por el directorio de trabajo cae en el hogar migrado, porque ese
-// directorio ES la pareja: son las dos unicas cuentas que existen ahi. Quien
-// entra por el tenant externo nunca se une a un hogar ajeno; estrena el suyo,
-// vacio.
+// Al hogar migrado --el que ya tiene los datos-- solo entra quien esta NOMBRADO
+// en MIEMBROS_PRINCIPAL. Cualquier otro estrena el suyo, vacio.
+//
+// Antes esto miraba el emisor del token: quien viniera del directorio de
+// trabajo entraba, porque «ese directorio ES la pareja». Era falso. El
+// directorio de trabajo tiene cientos de cuentas, y lo unico que impedia que
+// entraran era que la aplicacion exige asignacion explicita. En cuanto se abre
+// el registro hay que relajar esa asignacion, y la regla del emisor habria
+// entregado las finanzas de la pareja a cada cuenta nueva.
+//
+// Por eso ahora es una lista de nombres propios y falla cerrada: sin lista,
+// nadie hereda los datos de nadie.
 
 /** Identidad estable del usuario dentro de su directorio. */
 function claveDeUsuario(u) {
   return String((u && (u.oid || u.sub)) || '').trim();
+}
+
+/**
+ * Quienes son duenos del hogar migrado. Acepta identificadores de objeto o
+ * correos: el oid es estable y el correo es lo que un humano encuentra.
+ */
+const MIEMBROS_PRINCIPAL = (process.env.MIEMBROS_PRINCIPAL || '')
+  .split(',')
+  .map(v => v.trim().toLowerCase())
+  .filter(Boolean);
+
+function esMiembroPrincipal(u) {
+  if (MIEMBROS_PRINCIPAL.length === 0) return false;
+  const clave = claveDeUsuario(u).toLowerCase();
+  const correo = correoDelToken(u);
+  return (Boolean(clave) && MIEMBROS_PRINCIPAL.includes(clave)) ||
+         (Boolean(correo) && MIEMBROS_PRINCIPAL.includes(correo));
 }
 
 async function leerHogares() {
@@ -92,13 +117,18 @@ async function migrarAHogares() {
     nombre: 'Nuestro hogar',
     creado: new Date().toISOString(),
     origen: 'migracion',
-    // Quien llegue por el directorio de trabajo entra aqui. Es lo que preserva
-    // el comportamiento de siempre para la pareja que ya usaba la aplicacion,
-    // sin pedirle que configure nada.
-    abiertoAlDirectorio: true,
   };
   await guardarHogares(mapa);
   console.log(`[hogares] migrado data.json -> ${archivoDeHogar(id)} (el original se conserva)`);
+  if (MIEMBROS_PRINCIPAL.length === 0) {
+    // Sin lista nadie puede reclamar estos datos. Es lo correcto --antes que
+    // dejar que los reclame quien llegue-- pero deja a la pareja fuera de lo
+    // suyo, asi que tiene que verse en el arranque.
+    console.warn(
+      '[hogares] MIEMBROS_PRINCIPAL vacio: nadie heredara los datos migrados. ' +
+      'Pon ahi los correos o los oid de las dos cuentas de la pareja.'
+    );
+  }
   return mapa;
 }
 
@@ -115,13 +145,13 @@ async function hogarDe(req) {
   let id = null;
   if (mapa.usuarios[clave] && mapa.hogares[mapa.usuarios[clave]]) {
     id = mapa.usuarios[clave];
-  } else if (req.emisor === 'trabajo') {
-    const abierto = Object.keys(mapa.hogares).find(h => mapa.hogares[h].abiertoAlDirectorio);
-    if (abierto) {
-      mapa.usuarios[clave] = abierto;
+  } else if (esMiembroPrincipal(req.user)) {
+    const principal = Object.keys(mapa.hogares).find(h => mapa.hogares[h].origen === 'migracion');
+    if (principal) {
+      mapa.usuarios[clave] = principal;
       cambio = true;
-      id = abierto;
-      console.log(`[hogares] ${correoDelToken(req.user) || clave} se une a ${abierto} por el directorio`);
+      id = principal;
+      console.log(`[hogares] ${correoDelToken(req.user) || clave} entra a ${principal} por estar nombrado`);
     }
   }
 

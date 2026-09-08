@@ -8,8 +8,9 @@ import path from 'node:path';
  * directorio de usar y tirar. Cada test recarga el servidor con su propio
  * DATA_DIR: las rutas se fijan al importar el modulo.
  */
-function cargarServidor(dir: string) {
+function cargarServidor(dir: string, miembros = '') {
   process.env.DATA_DIR = dir;
+  process.env.MIEMBROS_PRINCIPAL = miembros;
   const ruta = require.resolve('../../../server.cjs');
   delete require.cache[ruta];
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -78,24 +79,39 @@ describe('migracion a hogares', () => {
 });
 
 describe('a que hogar va cada quien', () => {
-  it('el directorio de trabajo entra al hogar migrado', async () => {
+  it('solo las cuentas NOMBRADAS entran al hogar migrado', async () => {
+    fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(datosDeEjemplo));
+    const s = cargarServidor(dir, 'jorge-oid,me@ejemplo.com');
+    await s.migrarAHogares();
+
+    // Una por oid y otra por correo: las dos formas valen.
+    expect(await s.hogarDe({ user: { oid: 'jorge-oid' } })).toBe('principal');
+    expect(await s.hogarDe({ user: { oid: 'zumy-oid', email: 'me@ejemplo.com' } })).toBe('principal');
+  });
+
+  // El caso que justifica la particion entera, y el que corrige la premisa
+  // falsa que tenia antes: el directorio de trabajo NO es la pareja, tiene
+  // cientos de cuentas. Venir del mismo directorio no da derecho a nada.
+  it('otra cuenta del MISMO directorio no ve el hogar de la pareja', async () => {
+    fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(datosDeEjemplo));
+    const s = cargarServidor(dir, 'jorge-oid,me@ejemplo.com');
+    await s.migrarAHogares();
+
+    const companero = { user: { oid: 'otro-oid', email: 'otro@itdemos.com' }, emisor: 'trabajo' };
+    expect(await s.hogarDe(companero)).toBeNull();
+  });
+
+  it('sin lista de miembros, nadie hereda los datos migrados', async () => {
     fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(datosDeEjemplo));
     const s = cargarServidor(dir);
     await s.migrarAHogares();
 
-    const req = { user: { oid: 'jorge-oid' }, emisor: 'trabajo' };
-    expect(await s.hogarDe(req)).toBe('principal');
-
-    // La pareja, con otra identidad, cae en el MISMO hogar: es lo que hace que
-    // la aplicacion siga siendo compartida.
-    const pareja = { user: { oid: 'zumy-oid' }, emisor: 'trabajo' };
-    expect(await s.hogarDe(pareja)).toBe('principal');
+    expect(await s.hogarDe({ user: { oid: 'jorge-oid' } })).toBeNull();
   });
 
-  // El caso que justifica la particion entera.
-  it('alguien del tenant externo NO ve el hogar de la pareja', async () => {
+  it('un invitado con Gmail NO ve el hogar de la pareja', async () => {
     fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(datosDeEjemplo));
-    const s = cargarServidor(dir);
+    const s = cargarServidor(dir, 'jorge-oid');
     await s.migrarAHogares();
 
     const ajeno = { user: { oid: 'gmail-oid', email: 'quien@gmail.com' }, emisor: 'externo' };

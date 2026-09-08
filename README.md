@@ -110,7 +110,7 @@ En el portal de Azure, **Entra ID → Registros de aplicaciones → Nueva**:
 ## Desplegarlo
 
 Hay un workflow de GitHub Actions que despliega a Azure App Service en cada
-push a `master`: compila en el runner, arma un paquete solo con lo necesario
+push a `main`: compila en el runner, arma un paquete solo con lo necesario
 para ejecutar, sube por zip deploy y no da el despliegue por bueno hasta que
 `/healthz` responde 200.
 

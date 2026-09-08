@@ -1511,6 +1511,32 @@ function App() {
     return <LoginPage />;
   }
 
+  // El servidor no contesta. Ofrecer «crea tu hogar» aqui seria mandar al
+  // usuario a una peticion que tampoco va a funcionar, y dejarle pensando que
+  // el error es suyo.
+  if (hogar.problema) {
+    return (
+      <div className="login-page">
+        <div className="login-bg-pattern" />
+        <div className="login-container">
+          <div className="login-card">
+            <div className="login-logo">
+              <span className="login-brand-mark" aria-hidden="true">J</span>
+              <h1 className="login-app-name">Juntos<span className="login-plus">+1</span></h1>
+              <p className="login-subtitle">No pudimos hablar con el servidor</p>
+            </div>
+            <p className="login-nota">
+              Tus datos están a salvo: esto es un problema de conexión, no tuyo.
+            </p>
+            <button className="login-btn" onClick={() => window.location.reload()}>
+              <span>Reintentar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!hogar.hogarId) {
     return (
       <AltaHogar

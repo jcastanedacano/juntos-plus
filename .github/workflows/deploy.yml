@@ -1,5 +1,10 @@
 name: Deploy to Azure App Service
 
+# Este es el unico repositorio del proyecto. Antes el desarrollo vivia en uno
+# privado y aqui solo se publicaba una copia; mantener las dos al dia a mano
+# era pedir que se desincronizaran, y con dos workflows apuntando a la misma
+# App Service tampoco quedaba claro que commit estaba desplegado.
+
 # Antes esto solo disparaba un sync de Kudu: el servidor hacia git fetch del
 # repo y compilaba. Dos problemas reales, ambos vistos en produccion:
 #
@@ -15,7 +20,7 @@ name: Deploy to Azure App Service
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

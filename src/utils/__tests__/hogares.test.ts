@@ -331,3 +331,28 @@ describe('como se unen dos juegos de datos', () => {
     expect(unido.users).toEqual([{ id: 'u1', password: 'x' }]);
   });
 });
+
+describe('la moneda del hogar', () => {
+  it('se fija al estrenarlo y queda en sus datos', async () => {
+    const s = cargarServidor(dir);
+    const id = await s.crearHogar(ana, 'Casa de Ana', 'EUR');
+    const datos = JSON.parse(fs.readFileSync(s.archivoDeHogar(id), 'utf8'));
+    expect(datos.currency).toBe('EUR');
+  });
+
+  it('acepta minusculas y cae en soles si no se dice nada', async () => {
+    const s = cargarServidor(dir);
+    const a = await s.crearHogar(ana, 'A', 'usd');
+    expect(JSON.parse(fs.readFileSync(s.archivoDeHogar(a), 'utf8')).currency).toBe('USD');
+    const b = await s.crearHogar(beto, 'B', undefined);
+    expect(JSON.parse(fs.readFileSync(s.archivoDeHogar(b), 'utf8')).currency).toBe('PEN');
+  });
+
+  // Una moneda que la aplicacion no sabe formatear saldria como un importe sin
+  // simbolo o con el de otra: mejor caer en la de casa que inventar.
+  it('una moneda desconocida no entra', async () => {
+    const s = cargarServidor(dir);
+    const id = await s.crearHogar(ana, 'A', 'BTC');
+    expect(JSON.parse(fs.readFileSync(s.archivoDeHogar(id), 'utf8')).currency).toBe('PEN');
+  });
+});

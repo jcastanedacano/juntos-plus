@@ -89,6 +89,11 @@ function App() {
   const isAuthenticated = useIsAuthenticated();
   // null mientras se pregunta; sin hogarId, toca el alta antes de la aplicacion.
   const [hogar, setHogar] = useState<EstadoHogar | null>(null);
+  // «Estoy dentro» no es lo mismo que «MSAL me conoce»: quien entra con Google
+  // no tiene cuenta en MSAL, y su identidad la confirma el servidor. Colgar los
+  // efectos de isAuthenticated dejaba a esos usuarios con la aplicacion abierta
+  // y sin cargar NADA: todo a cero, y la moneda en su valor por defecto.
+  const dentro = isAuthenticated || Boolean(hogar?.autenticado);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [currency, setCurrency] = useState('PEN');
@@ -435,12 +440,12 @@ function App() {
 
   // Load data only when authenticated and the household is known
   useEffect(() => {
-    if (isAuthenticated && hogar?.hogarId) loadData();
-  }, [loadData, isAuthenticated, hogar?.hogarId]);
+    if (dentro && hogar?.hogarId) loadData();
+  }, [loadData, dentro, hogar?.hogarId]);
 
   // Tipo de cambio: se refresca al entrar, como mucho cada 6 horas y solo si
   // no hay una tasa fijada a mano. Falla en silencio a proposito.
-  useEffect(() => { if (isAuthenticated) refreshFxRates().catch(() => {}); }, [isAuthenticated]);
+  useEffect(() => { if (dentro) refreshFxRates().catch(() => {}); }, [dentro]);
 
   // Auto-reload every day at 12:00 PM
   useEffect(() => {
@@ -471,7 +476,7 @@ function App() {
   // refresh or a hard reload. Only reloads when the version actually moved —
   // the endpoint is cheap, but re-fetching the whole dataset isn't.
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!dentro) return;
     let knownVersion: number | null = null;
     let cancelled = false;
 
@@ -499,7 +504,7 @@ function App() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [isAuthenticated, loadData, addToast]);
+  }, [dentro, loadData, addToast]);
 
   // Auto-update to current month if user is on "current month" mode
   useEffect(() => {
@@ -1499,7 +1504,7 @@ function App() {
   }
 
   // Ni token de Microsoft ni cookie de Google: no hay a quien enseñarle nada.
-  if (!isAuthenticated && !hogar.autenticado) {
+  if (!dentro) {
     return <LoginPage />;
   }
 

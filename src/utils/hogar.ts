@@ -77,7 +77,15 @@ async function accion(ruta: string, cuerpo: unknown): Promise<Resultado> {
   }
 }
 
-export const crearHogar = (nombre: string) => accion('/hogar', { nombre });
+/** Las que la aplicacion sabe formatear, con su simbolo y su nombre. */
+export const MONEDAS = [
+  { codigo: 'PEN', simbolo: 'S/', nombre: 'Soles' },
+  { codigo: 'USD', simbolo: '$', nombre: 'Dólares' },
+  { codigo: 'EUR', simbolo: '€', nombre: 'Euros' },
+] as const;
+
+export const crearHogar = (nombre: string, moneda: string) =>
+  accion('/hogar', { nombre, moneda });
 export const invitarAlHogar = (correo: string) => accion('/hogar/invitacion', { correo });
 export const aceptarInvitacion = (hogarId: string) => accion('/hogar/invitacion/aceptar', { hogarId });
 export const rechazarInvitacion = (hogarId: string) => accion('/hogar/invitacion/rechazar', { hogarId });

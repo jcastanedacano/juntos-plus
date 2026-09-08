@@ -5474,6 +5474,68 @@ body {
   outline-offset: 1px;
 }
 
+/* Tres opciones, las tres a la vista: con un desplegable habria que abrirlo
+   para saber que existen otras monedas. */
+.alta-monedas {
+  border: 0;
+  padding: 0;
+  margin: 0 0 0.9rem;
+}
+
+.alta-monedas legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.alta-monedas-fila {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.alta-moneda {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0.6rem 0.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.alta-moneda:hover {
+  border-color: var(--accent-blue);
+}
+
+.alta-moneda:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 1px;
+}
+
+/* La elegida se distingue por borde y color, no por relleno: un boton macizo
+   entre dos huecos parece pulsado, no seleccionado. */
+.alta-moneda.es-elegida {
+  border-color: var(--accent-blue);
+  background: rgba(108, 142, 239, 0.12);
+  color: var(--text-primary);
+}
+
+.alta-moneda-simbolo {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.alta-moneda-nombre {
+  font-size: 0.7rem;
+}
+
 .alta-error {
   margin: 0.75rem 0 0;
   color: #ff8f8f;

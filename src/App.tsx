@@ -424,8 +424,10 @@ function App() {
   // Los datos son del hogar, no del usuario. Mientras no se sepa cual es, no se
   // piden: el servidor responderia 409 y saldria un error donde en realidad
   // falta un paso de alta.
+  // Se pregunta SIEMPRE, no solo con sesion de Microsoft: quien entra por
+  // Google no tiene cuenta en MSAL, y su identidad viaja en la cookie. El
+  // servidor es el unico que sabe si reconoce a quien pregunta.
   useEffect(() => {
-    if (!isAuthenticated) return;
     let vigente = true;
     consultarHogar().then(e => { if (vigente) setHogar(e); });
     return () => { vigente = false; };
@@ -1489,14 +1491,15 @@ function App() {
     </Suspense>
   );
 
-  if (!isAuthenticated) {
-    return <LoginPage />;
-  }
-
-  // Todavia preguntando de quien son los datos. Un parpadeo del alta a quien SI
-  // tiene hogar seria peor que esperar un momento en blanco.
+  // Todavia preguntando quien es. Un parpadeo del login a quien ya tiene sesion
+  // seria peor que esperar un momento en blanco.
   if (hogar === null) {
     return <div className="app-cargando" aria-busy="true" />;
+  }
+
+  // Ni token de Microsoft ni cookie de Google: no hay a quien enseñarle nada.
+  if (!isAuthenticated && !hogar.autenticado) {
+    return <LoginPage />;
   }
 
   if (!hogar.hogarId) {

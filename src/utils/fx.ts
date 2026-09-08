@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Transaction, CurrencyType } from '../types';
-import { getToken } from '../auth/getToken';
+import { tokenOpcional } from '../auth/getToken';
 import { getAPIUrl } from './storageAPI';
 
 /**
@@ -100,9 +100,10 @@ export async function refreshFxRates(force = false): Promise<FxRates> {
   if (!force && last && Date.now() - last < REFRESH_EVERY_MS) return readFromStorage();
 
   try {
-    const token = await getToken();
+    const token = await tokenOpcional();
     const res = await fetch(`${getAPIUrl()}/fx`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
       cache: 'no-store',
     });
     if (!res.ok) throw new Error(`HTTP_${res.status}`);

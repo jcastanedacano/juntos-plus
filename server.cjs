@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
 const webpush = require('web-push');
 require('dotenv').config();
+const { montarRutas: montarRutasGoogle, sesionDe, GOOGLE_ACTIVO } = require('./googleAuth.cjs');
 
 const app = express();
 app.use(compression());
@@ -523,6 +524,17 @@ function verificarCon(emisor, token) {
 
 // JWT auth middleware for API routes
 const authMiddleware = async (req, res, next) => {
+  // Dos formas de identificarse, y las dos valen igual a partir de aqui:
+  // el token de Entra que trae la pareja, o la cookie de sesion que emitimos
+  // nosotros cuando alguien entra por Google. El resto del servidor no
+  // distingue: solo mira req.user, y ahi hay un sub y un correo en ambos casos.
+  const sesion = sesionDe(req);
+  if (sesion) {
+    req.user = sesion;
+    req.emisor = 'google';
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'No token provided' });
@@ -615,8 +627,15 @@ app.get('/healthz', async (req, res) => {
     timestamp: new Date().toISOString(),
     build: BUILD.sha,
     builtAt: BUILD.builtAt,
+    // Para poder comprobar desde fuera si la entrada por Google quedo
+    // configurada, sin tener que leer variables de entorno del servidor.
+    google: GOOGLE_ACTIVO,
   });
 });
+
+// Entrar con Google va ANTES del middleware y fuera de /api: son las rutas por
+// las que se llega sin tener todavia con que identificarse.
+montarRutasGoogle(app);
 
 // Auth middleware on ALL API operations (including GET)
 app.use('/api', authMiddleware);

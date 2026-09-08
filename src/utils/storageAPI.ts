@@ -1,13 +1,16 @@
 import { Transaction, Account, Budget, User, SavingsGoal, Investment, RecurringTransaction, AutoSave } from '../types';
-import { getToken } from '../auth/getToken';
+import { tokenOpcional } from '../auth/getToken';
 
 const API_URL = 'http://localhost:3007/api';
 
 // Get API URL based on current location
 export const getAPIUrl = () => {
-  // Si estamos en localhost, usar la URL local
+  // En localhost va por el proxy de Vite --ruta relativa, mismo origen-- para
+  // que la cookie de sesion se comporte igual que en produccion. Apuntar al
+  // puerto 3007 la convertiria en cookie de terceros y el navegador dejaria de
+  // mandarla, con lo que Google entraria pero la aplicacion no lo notaria.
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return API_URL;
+    return window.location.port === '3008' ? '/api' : API_URL;
   }
 
   // Si la URL actual usa HTTPS (Cloudflare Tunnel), usar la misma URL base
@@ -47,15 +50,16 @@ const fetchAllData = async (): Promise<AppData> => {
   pendingFetch = (async () => {
     try {
       const apiUrl = getAPIUrl();
-      const token = await getToken();
+      const token = await tokenOpcional();
       const response = await fetch(`${apiUrl}/data`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         // Skip the SW cache for the auth-bearing call so we always hit
         // the real server. Stale cached responses were silently shadowing
         // real data on returning devices.
         cache: 'no-store',
+        credentials: 'include',
       });
       if (!response.ok) {
         throw new Error(`HTTP_${response.status}`);
@@ -109,14 +113,15 @@ const saveToServer = async (collection: string, data: any): Promise<void> => {
     // Para el caso especial de 'user' siendo null, enviar un objeto con una bandera
     const bodyData = data === null && collection === 'user' ? { __null__: true } : data;
 
-    const token = await getToken();
+    const token = await tokenOpcional();
     const response = await fetch(`${getAPIUrl()}/data/${collection}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(bodyData),
+      credentials: 'include',
     });
     if (!response.ok) {
       const errorText = await response.text();
@@ -245,9 +250,10 @@ export const storageAPI = {
   // device without re-downloading the full data blob every time.
   getVersion: async (): Promise<{ version: number; updatedAt: string } | null> => {
     try {
-      const token = await getToken();
+      const token = await tokenOpcional();
       const response = await fetch(`${getAPIUrl()}/data/version`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
         cache: 'no-store',
       });
       if (!response.ok) return null;
@@ -260,9 +266,10 @@ export const storageAPI = {
   // Triggers a browser download of the full current dataset — manual backup
   // button, independent of the server's own daily rotation.
   downloadBackup: async (): Promise<void> => {
-    const token = await getToken();
+    const token = await tokenOpcional();
     const response = await fetch(`${getAPIUrl()}/backup`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
       cache: 'no-store',
     });
     if (!response.ok) {

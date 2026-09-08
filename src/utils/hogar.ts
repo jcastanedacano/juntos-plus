@@ -1,4 +1,4 @@
-import { getToken } from '../auth/getToken';
+import { tokenOpcional } from '../auth/getToken';
 import { getAPIUrl } from './storageAPI';
 
 /**
@@ -16,6 +16,8 @@ export interface Invitacion {
 }
 
 export interface EstadoHogar {
+  /** Si el servidor reconocio a quien pregunta, por token o por cookie. */
+  autenticado: boolean;
   hogarId: string | null;
   correo: string | null;
   nombre: string | null;
@@ -27,35 +29,38 @@ export interface EstadoHogar {
   invitaciones: Invitacion[];
 }
 
-const SIN_HOGAR: EstadoHogar = {
-  hogarId: null, correo: null, nombre: null,
+const ANONIMO: EstadoHogar = {
+  autenticado: false, hogarId: null, correo: null, nombre: null,
   miembros: [], enviadas: [], invitaciones: [],
 };
 
 async function pedir(ruta: string, opciones: RequestInit = {}) {
-  const token = await getToken();
+  // Sin cabecera cuando no hay cuenta de Microsoft: quien entro por Google se
+  // identifica con la cookie, que el navegador adjunta sola.
+  const token = await tokenOpcional();
   return fetch(`${getAPIUrl()}${ruta}`, {
     ...opciones,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(opciones.headers || {}),
     },
+    credentials: 'include',
     cache: 'no-store',
   });
 }
 
-/**
- * Qué hogar tengo, si tengo. Un fallo de red devuelve `null` en hogarId, que el
- * cliente ya sabe tratar como «todavía no»: es preferible a tumbar el arranque.
- */
+/** Qué hogar tengo, si tengo, y si el servidor me reconoce siquiera. */
 export async function consultarHogar(): Promise<EstadoHogar> {
   try {
     const r = await pedir('/hogar');
-    if (!r.ok) return SIN_HOGAR;
-    return { ...SIN_HOGAR, ...(await r.json()) };
+    // Un 401 es «no se quien eres» y lleva al login; cualquier otro fallo es
+    // del servidor y no debe expulsar a quien si tiene sesion.
+    if (r.status === 401 || r.status === 403) return ANONIMO;
+    if (!r.ok) return { ...ANONIMO, autenticado: true };
+    return { ...ANONIMO, autenticado: true, ...(await r.json()) };
   } catch {
-    return SIN_HOGAR;
+    return ANONIMO;
   }
 }
 

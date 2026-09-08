@@ -18,6 +18,13 @@ export interface Invitacion {
 export interface EstadoHogar {
   /** Si el servidor reconocio a quien pregunta, por token o por cookie. */
   autenticado: boolean;
+  /**
+   * El servidor no contesto o contesto mal. NO es lo mismo que «no tienes
+   * hogar»: con el servidor caido no hay que ofrecer crear uno, porque la
+   * peticion tampoco va a funcionar y el usuario se queda pensando que el
+   * error es suyo.
+   */
+  problema: boolean;
   hogarId: string | null;
   correo: string | null;
   nombre: string | null;
@@ -30,7 +37,7 @@ export interface EstadoHogar {
 }
 
 const ANONIMO: EstadoHogar = {
-  autenticado: false, hogarId: null, correo: null, nombre: null,
+  autenticado: false, problema: false, hogarId: null, correo: null, nombre: null,
   miembros: [], enviadas: [], invitaciones: [],
 };
 
@@ -54,13 +61,14 @@ async function pedir(ruta: string, opciones: RequestInit = {}) {
 export async function consultarHogar(): Promise<EstadoHogar> {
   try {
     const r = await pedir('/hogar');
-    // Un 401 es «no se quien eres» y lleva al login; cualquier otro fallo es
-    // del servidor y no debe expulsar a quien si tiene sesion.
+    // Un 401 es «no se quien eres» y lleva al login. Cualquier otro fallo es
+    // del servidor: ni login ni alta, un aviso de que vuelva a intentarlo.
     if (r.status === 401 || r.status === 403) return ANONIMO;
-    if (!r.ok) return { ...ANONIMO, autenticado: true };
+    if (!r.ok) return { ...ANONIMO, autenticado: true, problema: true };
     return { ...ANONIMO, autenticado: true, ...(await r.json()) };
   } catch {
-    return ANONIMO;
+    // Sin red ni servidor. Tampoco es «no tienes hogar».
+    return { ...ANONIMO, autenticado: true, problema: true };
   }
 }
 

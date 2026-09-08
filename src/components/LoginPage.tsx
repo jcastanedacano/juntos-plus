@@ -1,6 +1,8 @@
 import { useMsal } from '@azure/msal-react';
-import { loginRequest, readLoginHint } from '../auth/msalConfig';
-import { Shield, TrendingUp, PiggyBank, BarChart3, CreditCard } from 'lucide-react';
+import {
+  loginRequest, readLoginHint, AUTORIDAD_EXTERNA, LOGIN_EXTERNO_ACTIVO,
+} from '../auth/msalConfig';
+import { Shield, TrendingUp, PiggyBank, BarChart3, CreditCard, AtSign } from 'lucide-react';
 
 export function LoginPage() {
   const { instance } = useMsal();
@@ -13,6 +15,14 @@ export function LoginPage() {
       ...loginRequest,
       ...(hint ? { loginHint: hint } : {}),
     });
+  };
+
+  // El tenant externo tiene su propia autoridad, asi que va como parametro de
+  // la peticion y no en la configuracion: la misma aplicacion atiende las dos
+  // puertas. Sin loginHint a proposito: quien entra por aqui puede venir de
+  // Google o de un correo suelto, y el hint guardado es del otro directorio.
+  const handleLoginExterno = () => {
+    instance.loginRedirect({ ...loginRequest, authority: AUTORIDAD_EXTERNA });
   };
 
   return (
@@ -50,6 +60,16 @@ export function LoginPage() {
             <Shield size={20} />
             <span>Iniciar sesión con Microsoft</span>
           </button>
+
+          {LOGIN_EXTERNO_ACTIVO && (
+            <>
+              <div className="login-sep"><span>o</span></div>
+              <button className="login-btn login-btn-alt" onClick={handleLoginExterno}>
+                <AtSign size={20} />
+                <span>Entrar con Google u otro correo</span>
+              </button>
+            </>
+          )}
 
           <p className="login-secured">
             <Shield size={12} />

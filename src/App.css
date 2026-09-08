@@ -5335,3 +5335,34 @@ body {
     padding: 1rem var(--gap-sm);
   }
 }
+
+/* Segundo camino de entrada: el tenant externo. Se distingue del principal
+   por peso, no por color, porque no es una accion distinta sino la misma
+   puerta con otra llave. */
+.login-sep {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.9rem 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.login-sep::before,
+.login-sep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.login-btn-alt {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.login-btn-alt:hover {
+  border-color: var(--accent-blue);
+  background: transparent;
+}

@@ -51,43 +51,134 @@ if (!TENANT_ID || !CLIENT_ID) {
   }
   console.warn(aviso);
 }
-const JWKS_URI = `https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`;
-const ISSUER = `https://login.microsoftonline.com/${TENANT_ID}/v2.0`;
+// Entra External ID, opcional. Es OTRO tenant, con su propio emisor y su
+// propia aplicacion, y sirve para que entre gente que no esta en el directorio
+// de trabajo: cuentas de Google, correo suelto. Si no esta configurado, la
+// aplicacion se comporta exactamente como antes.
+const EXTERNAL_TENANT_ID = process.env.EXTERNAL_TENANT_ID;
+const EXTERNAL_CLIENT_ID = process.env.EXTERNAL_CLIENT_ID;
+const EXTERNAL_SUBDOMAIN = process.env.EXTERNAL_SUBDOMAIN;
+const EXTERNAL_ENABLED = Boolean(EXTERNAL_TENANT_ID && EXTERNAL_CLIENT_ID && EXTERNAL_SUBDOMAIN);
 
-const client = jwksClient({
-  jwksUri: JWKS_URI,
-  cache: true,
-  rateLimit: true,
-  jwksRequestsPerMinute: 10,
-});
+/**
+ * Quien puede entrar, por correo, separado por comas.
+ *
+ * Hasta ahora la lista era el tenant: solo dos cuentas del directorio privado
+ * podian pedir un token, asi que validar el emisor bastaba como autorizacion.
+ * Abrir un tenant externo con registro libre rompe justo eso, porque cualquiera
+ * con un Gmail puede conseguir un token valido.
+ *
+ * Por eso los tokens del tenant externo EXIGEN lista: sin ella no entra nadie
+ * por esa puerta. Abrirla tiene que ser un acto explicito, no el efecto
+ * colateral de configurar el login.
+ */
+const ALLOWED_USERS = (process.env.ALLOWED_USERS || '')
+  .split(',')
+  .map(c => c.trim().toLowerCase())
+  .filter(Boolean);
 
-function getSigningKey(header, callback) {
-  client.getSigningKey(header.kid, (err, key) => {
-    if (err) return callback(err);
-    callback(null, key.getPublicKey());
+if (EXTERNAL_ENABLED && ALLOWED_USERS.length === 0) {
+  console.warn(
+    '[auth] EXTERNAL_* configurado pero ALLOWED_USERS vacio: ' +
+    'no se aceptara ningun inicio de sesion externo. Anade los correos permitidos.'
+  );
+}
+
+// Un emisor por proveedor, cada uno con su audiencia y su juego de claves.
+const EMISORES = [
+  {
+    nombre: 'trabajo',
+    issuer: `https://login.microsoftonline.com/${TENANT_ID}/v2.0`,
+    audiencia: CLIENT_ID,
+    jwksUri: `https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`,
+    exigeLista: false,
+  },
+  ...(EXTERNAL_ENABLED ? [{
+    nombre: 'externo',
+    issuer: `https://${EXTERNAL_TENANT_ID}.ciamlogin.com/${EXTERNAL_TENANT_ID}/v2.0`,
+    audiencia: EXTERNAL_CLIENT_ID,
+    jwksUri: `https://${EXTERNAL_SUBDOMAIN}.ciamlogin.com/${EXTERNAL_TENANT_ID}/discovery/v2.0/keys`,
+    exigeLista: true,
+  }] : []),
+];
+
+for (const e of EMISORES) {
+  e.claves = jwksClient({
+    jwksUri: e.jwksUri,
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 10,
+  });
+}
+
+/** El correo del token, mires donde mires: cada proveedor lo pone en un sitio. */
+function correoDelToken(t) {
+  return String(t.preferred_username || t.email || t.upn || '').trim().toLowerCase();
+}
+
+function permitido(decoded, emisor) {
+  if (!emisor.exigeLista) return true;
+  const correo = correoDelToken(decoded);
+  return Boolean(correo) && ALLOWED_USERS.includes(correo);
+}
+
+/** Verifica contra UN emisor. Resuelve con el token o con un error. */
+function verificarCon(emisor, token) {
+  return new Promise(resolve => {
+    jwt.verify(
+      token,
+      (header, cb) => emisor.claves.getSigningKey(header.kid, (err, key) => {
+        if (err) return cb(err);
+        cb(null, key.getPublicKey());
+      }),
+      { audience: emisor.audiencia, issuer: emisor.issuer, algorithms: ['RS256'] },
+      (err, decoded) => resolve(err ? { error: err } : { decoded }),
+    );
   });
 }
 
 // JWT auth middleware for API routes
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'No token provided' });
   }
 
   const token = authHeader.split(' ')[1];
-  jwt.verify(token, getSigningKey, {
-    audience: CLIENT_ID,
-    issuer: ISSUER,
-    algorithms: ['RS256'],
-  }, (err, decoded) => {
-    if (err) {
-      console.error('Token validation error:', err.message);
+
+  // El emisor del propio token dice a quien preguntar: probar todos a ciegas
+  // gasta una llamada de claves por proveedor y ensucia los logs con errores
+  // que no son fallos.
+  let emisorDelToken = null;
+  try {
+    const cuerpo = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+    emisorDelToken = cuerpo && cuerpo.iss;
+  } catch {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+
+  const candidatos = EMISORES.filter(e => e.issuer === emisorDelToken);
+  if (candidatos.length === 0) {
+    console.error('[auth] emisor no reconocido:', emisorDelToken);
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+
+  for (const emisor of candidatos) {
+    const r = await verificarCon(emisor, token);
+    if (r.error) {
+      console.error(`[auth] token invalido (${emisor.nombre}):`, r.error.message);
       return res.status(401).json({ error: 'Invalid token' });
     }
-    req.user = decoded;
-    next();
-  });
+    if (!permitido(r.decoded, emisor)) {
+      // 403 y no 401: el token es bueno, quien lo trae no esta invitado. Un
+      // 401 haria que el cliente reintentara el login en bucle.
+      console.warn(`[auth] fuera de la lista: ${correoDelToken(r.decoded) || '(sin correo)'}`);
+      return res.status(403).json({ error: 'Tu cuenta no tiene acceso a estos datos' });
+    }
+    req.user = r.decoded;
+    req.emisor = emisor.nombre;
+    return next();
+  }
 };
 
 // CORS. Los origenes de desarrollo van fijos; los de produccion llegan por
@@ -803,7 +894,7 @@ app.use((req, res, next) => {
 // Exportado para poder probar la logica de fechas del resumen sin levantar
 // el servidor. El arranque queda detras de require.main para que importar
 // este archivo desde un test no abra un puerto.
-module.exports = { buildDigest, limaDateStr, addDaysStr };
+module.exports = { buildDigest, limaDateStr, addDaysStr, correoDelToken, permitido, EMISORES };
 
 // Start server
 if (require.main === module) initDataFile().then(() => {

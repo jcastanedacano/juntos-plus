@@ -66,6 +66,11 @@ jobs:
         env:
           VITE_AZURE_CLIENT_ID: ${{ vars.VITE_AZURE_CLIENT_ID }}
           VITE_AZURE_TENANT_ID: ${{ vars.VITE_AZURE_TENANT_ID }}
+          # Opcionales: si no estan definidas, el boton de login externo no se
+          # compila y la aplicacion queda como estaba.
+          VITE_EXTERNAL_CLIENT_ID: ${{ vars.VITE_EXTERNAL_CLIENT_ID }}
+          VITE_EXTERNAL_TENANT_ID: ${{ vars.VITE_EXTERNAL_TENANT_ID }}
+          VITE_EXTERNAL_SUBDOMAIN: ${{ vars.VITE_EXTERNAL_SUBDOMAIN }}
         run: |
           test -n "$VITE_AZURE_CLIENT_ID" || { echo "Falta la variable VITE_AZURE_CLIENT_ID"; exit 1; }
           test -n "$VITE_AZURE_TENANT_ID" || { echo "Falta la variable VITE_AZURE_TENANT_ID"; exit 1; }

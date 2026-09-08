@@ -13,10 +13,32 @@ if (!CLIENT_ID || !TENANT_ID) {
   );
 }
 
+// Entra External ID, opcional. Es otro tenant, con su propia autoridad y su
+// propia aplicacion, y es la puerta para quien no esta en el directorio de
+// trabajo: cuentas de Google, correo suelto. Sin estas variables la aplicacion
+// se comporta igual que siempre y el boton ni aparece.
+const EXTERNAL_CLIENT_ID = import.meta.env.VITE_EXTERNAL_CLIENT_ID;
+const EXTERNAL_TENANT_ID = import.meta.env.VITE_EXTERNAL_TENANT_ID;
+const EXTERNAL_SUBDOMAIN = import.meta.env.VITE_EXTERNAL_SUBDOMAIN;
+
+export const LOGIN_EXTERNO_ACTIVO = Boolean(
+  EXTERNAL_CLIENT_ID && EXTERNAL_TENANT_ID && EXTERNAL_SUBDOMAIN
+);
+
+/** Autoridad del tenant externo. Vacia si no esta configurado. */
+export const AUTORIDAD_EXTERNA = LOGIN_EXTERNO_ACTIVO
+  ? `https://${EXTERNAL_SUBDOMAIN}.ciamlogin.com/${EXTERNAL_TENANT_ID}`
+  : '';
+
 export const msalConfig: Configuration = {
   auth: {
     clientId: CLIENT_ID,
     authority: `https://login.microsoftonline.com/${TENANT_ID}`,
+    // MSAL rechaza cualquier autoridad que no sea la suya salvo que se declare
+    // aqui: ciamlogin.com no esta en su lista de confianza por defecto.
+    knownAuthorities: LOGIN_EXTERNO_ACTIVO
+      ? [`${EXTERNAL_SUBDOMAIN}.ciamlogin.com`]
+      : [],
     redirectUri: window.location.origin,
     postLogoutRedirectUri: window.location.origin,
   },

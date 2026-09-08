@@ -31,16 +31,15 @@ export function LoginPage() {
   // como invitado de este directorio. Sin loginHint a proposito, porque el hint
   // guardado es de una cuenta de trabajo y aqui viene otra persona.
   //
-  // domain_hint lleva directo a Google sin pasar por el selector. Es una pista:
-  // si el flujo no la reconoce, sale el formulario normal en vez de fallar.
-  const conGoogle = () => {
-    instance.loginRedirect({
-      ...loginRequest,
-      extraQueryParameters: { domain_hint: 'google.com' },
-    });
-  };
-
-  const registrarse = () => {
+  // Sin domain_hint, y no por olvido: en un directorio de trabajo esa pista
+  // acelera hacia dominios FEDERADOS, no hacia proveedores sociales. Medido
+  // con la aplicacion ya asociada al flujo: «google.com» se ignora en silencio
+  // y «google» --el valor que documenta Microsoft para los tenants externos,
+  // que es otro producto-- devuelve AADSTS90023. No hay salto directo, asi que
+  // el boton no lo promete: lleva a la pantalla donde Google es una opcion.
+  // El boton de Google y el enlace de registro acaban en el mismo sitio, que es
+  // la verdad: la pantalla de Microsoft es la que ofrece las dos cosas.
+  const entrarSinPista = () => {
     instance.loginRedirect({ ...loginRequest });
   };
 
@@ -77,23 +76,31 @@ export function LoginPage() {
 
           <button className="login-btn" onClick={handleLogin}>
             <Shield size={20} />
-            <span>Iniciar sesión con Microsoft</span>
+            <span>Continuar con Microsoft</span>
           </button>
 
           {LOGIN_GOOGLE_ACTIVO && (
             <>
               <div className="login-sep"><span>o</span></div>
 
-              <button className="login-btn login-btn-google" onClick={conGoogle}>
+              <button className="login-btn login-btn-google" onClick={entrarSinPista}>
                 <MarcaGoogle />
                 <span>Continuar con Google</span>
               </button>
+
+              {/* Microsoft es quien federa con Google, asi que su pantalla va
+                  siempre primero y no hay forma de saltarsela. Avisarlo aqui
+                  evita que el usuario crea que se equivoco de boton al ver una
+                  caja de correo de Microsoft donde esperaba a Google. */}
+              <p className="login-nota">
+                Google se elige en la siguiente pantalla, la de Microsoft.
+              </p>
 
               {/* Registrarse no es lo mismo que entrar, asi que no compite como
                   boton: es la salida para quien todavia no tiene cuenta. */}
               <p className="login-registro">
                 ¿Primera vez?{' '}
-                <button type="button" className="login-enlace" onClick={registrarse}>
+                <button type="button" className="login-enlace" onClick={entrarSinPista}>
                   Crea tu cuenta
                 </button>
               </p>

@@ -5487,6 +5487,18 @@ body {
   cursor: default;
 }
 
+.login-nota {
+  margin: 0.6rem 0 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.login-nota + .login-registro {
+  margin-top: 0.5rem;
+}
+
 .login-registro {
   margin: 0.9rem 0 0;
   text-align: center;

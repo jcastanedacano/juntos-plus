@@ -8,6 +8,8 @@ interface MobileSettingsViewProps {
   onOpenSettings?: () => void;
   onOpenNotifications?: () => void;
   onOpenOwnerLabels?: (foco?: 'pareja' | 'cambio') => void;
+  /** Correo de la sesion del servidor, cuando se entro por Google. */
+  correoSesion?: string | null;
 }
 
 /**
@@ -42,6 +44,7 @@ export function MobileSettingsView({
   onOpenSettings,
   onOpenNotifications,
   onOpenOwnerLabels,
+  correoSesion
 }: MobileSettingsViewProps) {
   const { instance, accounts } = useMsal();
   const account = accounts[0];
@@ -100,13 +103,14 @@ export function MobileSettingsView({
         <div className="cl-kicker">Sesión</div>
         <div className="cl-settings-account">
           <span className="cl-settings-account-label">Sesión iniciada como</span>
-          <span>{account?.username || account?.name}</span>
+          <span>{account?.username || account?.name || correoSesion || '—'}</span>
         </div>
         <button
           className="cl-settings-row"
           onClick={() => {
-            import('../../auth/msalConfig').then(m => m.clearLoginHint());
-            instance.logoutRedirect({ postLogoutRedirectUri: window.location.origin });
+            // Cierra las dos: la de Microsoft y la cookie de Google. Cerrar
+            // solo una deja al usuario dentro creyendo que salio.
+            import('../../auth/salir').then(m => m.cerrarSesion(instance));
           }}
         >
           <span className="cl-settings-label">Cerrar sesión</span>

@@ -1,6 +1,6 @@
 import { Plus, Download, Menu, LogOut } from 'lucide-react';
 import { useMsal } from '@azure/msal-react';
-import { clearLoginHint } from '../auth/msalConfig';
+import { cerrarSesion } from '../auth/salir';
 import { MonthSelector } from './MonthSelector';
 
 export type PeriodFilter = 'month' | '3months' | 'year' | 'custom';
@@ -18,6 +18,8 @@ interface HeaderProps {
   isCurrentMonth?: boolean;
   onResetToCurrentMonth?: () => void;
   onMobileMenuOpen?: () => void;
+  /** Correo de la sesion del servidor, cuando se entro por Google. */
+  correoSesion?: string | null;
 }
 
 const periodLabels: Record<PeriodFilter, string> = {
@@ -39,19 +41,21 @@ export function Header({
   onMonthChange,
   isCurrentMonth,
   onResetToCurrentMonth,
-  onMobileMenuOpen
+  onMobileMenuOpen,
+  correoSesion
 }: HeaderProps) {
   const { instance, accounts } = useMsal();
   const account = accounts[0];
 
-  const initials = account?.name
-    ? account.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
-    : '?';
+  const handleLogout = () => { cerrarSesion(instance); };
 
-  const handleLogout = () => {
-    clearLoginHint();
-    instance.logoutRedirect({ postLogoutRedirectUri: window.location.origin });
-  };
+  // Quien entra con Google no tiene cuenta en MSAL. Antes el bloque entero
+  // dependia de `account`, asi que a esos usuarios no se les dibujaba ni el
+  // boton de salir: estaban dentro sin forma de irse.
+  const nombre = account?.name || correoSesion || '';
+  const iniciales = account?.name
+    ? account.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+    : (correoSesion ? correoSesion.slice(0, 2).toUpperCase() : '?');
 
   return (
     <header className="app-header">
@@ -89,10 +93,10 @@ export function Header({
       </div>
 
       <div className="header-right">
-        {account && (
+        {(account || correoSesion) && (
           <div className="header-user-info">
-            <div className="header-avatar">{initials}</div>
-            <span className="header-user-name">{account.name}</span>
+            <div className="header-avatar">{iniciales}</div>
+            <span className="header-user-name">{nombre}</span>
             <button className="header-logout-btn" onClick={handleLogout} title="Cerrar sesión">
               <LogOut size={16} />
             </button>

@@ -1,12 +1,29 @@
+<div align="center">
+
 # Juntos+1
 
-Una PWA de finanzas para parejas, en español. Las cuentas se llevan en la
+**Una PWA de finanzas para parejas.** En español. Las cuentas se llevan en la
 moneda que elijas al empezar, entre soles, dólares y euros, y lo que registre
 cada uno queda atribuido a quien lo pagó.
+
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-b68235?style=flat-square)](LICENSE)
+[![React 18](https://img.shields.io/badge/React-18-b68235?style=flat-square)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-b68235?style=flat-square)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-6-b68235?style=flat-square)](https://vite.dev)
+[![PWA](https://img.shields.io/badge/PWA-Workbox-b68235?style=flat-square)](https://vite-pwa-org.netlify.app)
 
 No pretende reemplazar al banco. Pretende responder dos preguntas que el banco
 no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 
+<img src="docs/img/inicio.png" alt="Inicio: lo que queda libre, el ritmo de gasto del mes y los mayores movimientos" width="32%">
+<img src="docs/img/movimientos.png" alt="Movimientos: la lista agrupada por dia con filtros por tipo" width="32%">
+<img src="docs/img/fijos.png" alt="Fijos: el total mensual de cargos automaticos y el peso de las suscripciones" width="32%">
+
+<sub>Capturas con datos de ejemplo.</sub>
+
+</div>
+
+> [!NOTE]
 > Proyecto personal, publicado por si le sirve a alguien más. Está hecho para
 > el caso de uso de una pareja concreta y se nota: la interfaz está solo en
 > español, y la parte bancaria es peruana. Importa el PDF del BCP, entiende
@@ -17,24 +34,14 @@ no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 
 ## Qué hace
 
-**Inicio.** Una cifra grande, lo que queda libre este mes, y debajo el ritmo
-de gasto contra el que se puede sostener. El gráfico compara tu acumulado con
-la diagonal de gastar parejo, con una marca en el día de hoy.
-
-**Movimientos.** La lista completa, agrupada por día, con búsqueda, filtros
-por tipo (variable, fijo, suscripción) y edición o borrado deslizando.
-
-**Recurrentes y suscripciones.** Detecta cargos que se repiten a partir de tus
-movimientos, avisa cuando cambia el precio, cuando falta un cobro y cuando hay
-duplicados. Pausa un recurrente automáticamente si registras el pago antes de
-tiempo, y lo reanuda solo al llegar la fecha.
-
-**Nosotros.** Reparto por persona de lo que ya está asignado, y una cola de
-movimientos sin autor para asignarlos rápido.
-
-**Tarjeta de crédito.** Utilización, fecha límite, ciclo, TEA, simulador de
-pago, estrategia de cuotas y proyección al cierre. Importa el PDF del estado
-de cuenta del BCP y lo parsea en el navegador.
+| Sección | Para qué sirve |
+|---|---|
+| **Inicio** | Una cifra grande, lo que queda libre este mes, y debajo el ritmo de gasto contra el que se puede sostener. El gráfico compara tu acumulado con la diagonal de gastar parejo, con una marca en el día de hoy. |
+| **Movimientos** | La lista completa, agrupada por día, con búsqueda, filtros por tipo (variable, fijo, suscripción) y edición o borrado deslizando. |
+| **Recurrentes y suscripciones** | Detecta cargos que se repiten a partir de tus movimientos, avisa cuando cambia el precio, cuando falta un cobro y cuando hay duplicados. Pausa un recurrente automáticamente si registras el pago antes de tiempo, y lo reanuda solo al llegar la fecha. |
+| **Nosotros** | Reparto por persona de lo que ya está asignado, y una cola de movimientos sin autor para asignarlos rápido. |
+| **Tarjeta de crédito** | Utilización, fecha límite, ciclo, TEA, simulador de pago, estrategia de cuotas y proyección al cierre. Importa el PDF del estado de cuenta del BCP y lo parsea en el navegador. |
+| **Hogares** | Los datos pertenecen a un hogar, no a una cuenta: sus dos personas ven exactamente lo mismo. Quien llega nuevo estrena el suyo, vacío, elige la moneda en la que lleva las cuentas, y para compartirlo llama a la otra persona por su correo. Al aceptar, lo que cada quien había apuntado por separado se une. |
 
 **Además:** presupuestos, metas de ahorro, patrimonio neto, recap anual,
 notificaciones push con un resumen diario y tipo de cambio en vivo.
@@ -45,28 +52,18 @@ notificaciones push con un resumen diario y tipo de cambio en vivo.
 
 Conviene ser explícito, porque son datos financieros.
 
-- Todo se guarda en **un archivo JSON en tu propio servidor**, en la ruta que
-  indique `DATA_DIR`. No hay base de datos ni servicio de terceros.
-- El acceso a la API está detrás de **Microsoft Entra ID**: cada petición
-  valida el token contra las claves públicas de tu tenant.
-- Los **PDF del banco se parsean en el navegador** con pdf.js. El archivo no
-  se sube a ningún sitio.
-- Las únicas llamadas externas son a Entra ID (login), a Microsoft Graph si
-  usas la sincronización de correo, y a un proveedor de tipo de cambio.
+| | |
+|---|---|
+| **Almacenamiento** | Un archivo JSON por hogar en tu propio servidor, bajo la ruta que indique `DATA_DIR`. Sin base de datos ni servicio de terceros. Un hogar nunca lee el archivo de otro: se resuelve desde la identidad de quien pregunta, no desde lo que pida. |
+| **Acceso** | Microsoft Entra ID o Google, a elección de quien entra. El token de Entra se valida contra las claves públicas de tu tenant; con Google el intercambio lo hace tu servidor y emite su propia sesión firmada. |
+| **PDF del banco** | Se parsean en el navegador con pdf.js. El archivo no se sube a ningún sitio. |
+| **Llamadas externas** | Entra ID y, si lo activas, Google para el login; Microsoft Graph si usas la sincronización de correo; y un proveedor de tipo de cambio. |
 
-Si despliegas esto, **el servidor es tuyo y los datos también**. También lo es
-la responsabilidad de respaldarlos: `DATA_DIR` debería apuntar a un volumen
-persistente, fuera del directorio de la aplicación, para que un despliegue no
-lo pise.
-
----
-
-## Stack
-
-React 18 · TypeScript · Vite · PWA con Workbox · Express · Recharts · MSAL
-(Microsoft Entra ID) · date-fns · Vitest.
-
-Sin base de datos: un archivo JSON y un candado de escritura.
+> [!IMPORTANT]
+> Si despliegas esto, el servidor es tuyo y los datos también. La
+> responsabilidad de respaldarlos, igual. Apunta `DATA_DIR` a un volumen
+> persistente, fuera del directorio de la aplicación, o el siguiente
+> despliegue se lleva por delante el archivo.
 
 ---
 
@@ -85,6 +82,17 @@ Edita `.env` con los identificadores de tu aplicación de Entra ID. Los cuatro
 valores de Azure son obligatorios: sin ellos ni el servidor ni el frontend
 arrancan, a propósito.
 
+La entrada con Google es opcional. Con `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+y `SESSION_SECRET` puestas, el servidor la habilita y `VITE_GOOGLE_ACTIVO=true`
+pinta el botón. Sin ellas la aplicación funciona igual, solo con Entra. El URI
+de redirección que hay que registrar en Google Cloud es
+`https://TU-DOMINIO/auth/google/callback`.
+
+`MIEMBROS_PRINCIPAL` nombra, por correo o por identificador, a quién pertenecen
+los datos que ya existían antes del reparto por hogares. Sin esa lista nadie los
+hereda, ni siquiera sus dueños: falla cerrada a propósito, porque la
+alternativa es que los reclame quien llegue primero.
+
 ```bash
 npm run dev     # frontend en http://localhost:3008
 npm start       # API en http://localhost:3007
@@ -98,7 +106,17 @@ npm test        # tests unitarios
 npm run lint
 ```
 
-### El registro en Entra ID
+### Stack
+
+React 18 · TypeScript · Vite · PWA con Workbox · Express · Recharts · MSAL
+(Microsoft Entra ID) · OAuth de Google con sesión propia · date-fns · Vitest.
+
+Sin base de datos: un archivo JSON y un candado de escritura.
+
+<details>
+<summary><b>El registro en Entra ID</b></summary>
+
+<br />
 
 En el portal de Azure, **Entra ID → Registros de aplicaciones → Nueva**:
 
@@ -107,9 +125,16 @@ En el portal de Azure, **Entra ID → Registros de aplicaciones → Nueva**:
    desarrollo y tu dominio para producción.
 3. Copia el **Id. de aplicación** y el **Id. de directorio** a `.env`.
 
+</details>
+
 ---
 
 ## Desplegarlo
+
+<details>
+<summary><b>GitHub Actions a Azure App Service</b></summary>
+
+<br />
 
 Hay un workflow de GitHub Actions que despliega a Azure App Service en cada
 push a `main`: compila en el runner, arma un paquete solo con lo necesario
@@ -131,7 +156,12 @@ repositorio:
 
 Y en la configuración de la App Service, las mismas variables de `.env.example`.
 
-### Saber qué versión está desplegada
+</details>
+
+<details>
+<summary><b>Saber qué versión está desplegada</b></summary>
+
+<br />
 
 Cada build se sella con el SHA del commit. Un service worker sirve el HTML
 desde su caché, así que el primer refresco tras un despliegue todavía muestra
@@ -144,9 +174,12 @@ curl -s https://tu-dominio.example/healthz
 
 El mismo valor está en `<meta name="build">` del HTML servido.
 
----
+</details>
 
-## Notificaciones push (opcional)
+<details>
+<summary><b>Notificaciones push (opcional)</b></summary>
+
+<br />
 
 ```bash
 npx web-push generate-vapid-keys
@@ -156,6 +189,8 @@ Pon el par de claves y un `VAPID_SUBJECT` con un correo real en el entorno.
 Si falta cualquiera de los tres, los endpoints de push responden 503 y el
 resto del servidor funciona igual.
 
+</details>
+
 ---
 
 ## Licencia
@@ -164,4 +199,6 @@ MIT. Ver [LICENSE](LICENSE).
 
 ---
 
-Construido con [Claude Code](https://claude.com/claude-code).
+<div align="center">
+<sub>Construido con <a href="https://claude.com/claude-code">Claude Code</a>.</sub>
+</div>

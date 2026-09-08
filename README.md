@@ -14,6 +14,8 @@ dólares, tarjetas BCP, Yape, TEA, cuotas.
 No pretende reemplazar al banco. Pretende responder dos preguntas que el banco
 no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 
+<!-- capturas: van aqui, ver docs/img/ -->
+
 </div>
 
 > [!NOTE]
@@ -43,28 +45,18 @@ notificaciones push con un resumen diario y tipo de cambio en vivo.
 
 Conviene ser explícito, porque son datos financieros.
 
-- Todo se guarda en **un archivo JSON en tu propio servidor**, en la ruta que
-  indique `DATA_DIR`. No hay base de datos ni servicio de terceros.
-- El acceso a la API está detrás de **Microsoft Entra ID**: cada petición
-  valida el token contra las claves públicas de tu tenant.
-- Los **PDF del banco se parsean en el navegador** con pdf.js. El archivo no
-  se sube a ningún sitio.
-- Las únicas llamadas externas son a Entra ID (login), a Microsoft Graph si
-  usas la sincronización de correo, y a un proveedor de tipo de cambio.
+| | |
+|---|---|
+| **Almacenamiento** | Un archivo JSON en tu propio servidor, en la ruta que indique `DATA_DIR`. Sin base de datos ni servicio de terceros. |
+| **Acceso** | Detrás de Microsoft Entra ID. Cada petición valida el token contra las claves públicas de tu tenant. |
+| **PDF del banco** | Se parsean en el navegador con pdf.js. El archivo no se sube a ningún sitio. |
+| **Llamadas externas** | Solo Entra ID para el login, Microsoft Graph si usas la sincronización de correo, y un proveedor de tipo de cambio. |
 
-Si despliegas esto, **el servidor es tuyo y los datos también**. También lo es
-la responsabilidad de respaldarlos: `DATA_DIR` debería apuntar a un volumen
-persistente, fuera del directorio de la aplicación, para que un despliegue no
-lo pise.
-
----
-
-## Stack
-
-React 18 · TypeScript · Vite · PWA con Workbox · Express · Recharts · MSAL
-(Microsoft Entra ID) · date-fns · Vitest.
-
-Sin base de datos: un archivo JSON y un candado de escritura.
+> [!IMPORTANT]
+> Si despliegas esto, el servidor es tuyo y los datos también. La
+> responsabilidad de respaldarlos, igual. Apunta `DATA_DIR` a un volumen
+> persistente, fuera del directorio de la aplicación, o el siguiente
+> despliegue se lleva por delante el archivo.
 
 ---
 
@@ -95,6 +87,13 @@ npm run build   # comprueba tipos y compila a dist/
 npm test        # tests unitarios
 npm run lint
 ```
+
+### Stack
+
+React 18 · TypeScript · Vite · PWA con Workbox · Express · Recharts · MSAL
+(Microsoft Entra ID) · date-fns · Vitest.
+
+Sin base de datos: un archivo JSON y un candado de escritura.
 
 <details>
 <summary><b>El registro en Entra ID</b></summary>

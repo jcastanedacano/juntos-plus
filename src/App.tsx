@@ -1422,6 +1422,7 @@ function App() {
 
       {currentView === 'settings' && (
         <MobileSettingsView
+          correoSesion={hogar?.correo}
           onViewChange={setCurrentView}
           onExport={handleExport}
           onOpenSettings={() => setShowCategoryManager(true)}
@@ -1574,6 +1575,7 @@ function App() {
 
             <div className={`app-main ${sidebarCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`}>
               <Header
+                correoSesion={hogar?.correo}
                 title={viewTitles[currentView]}
                 periodFilter={periodFilter}
                 onPeriodChange={setPeriodFilter}

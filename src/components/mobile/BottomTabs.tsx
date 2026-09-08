@@ -1,4 +1,4 @@
-import { LayoutDashboard, Receipt, Settings } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, Settings } from 'lucide-react';
 import type { ViewType } from '../Sidebar';
 
 interface BottomTabsProps {
@@ -26,7 +26,10 @@ interface BottomTabsProps {
  */
 const tabs: { id: ViewType; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
-  { id: 'transactions', label: 'Movimientos', icon: Receipt },
+  // ArrowLeftRight y no Receipt: el icono de recibo de lucide lleva un simbolo
+  // de dolar dibujado dentro, y en un hogar en euros o en soles eso es una
+  // moneda que no es la suya. Un movimiento es algo que entra o sale.
+  { id: 'transactions', label: 'Movimientos', icon: ArrowLeftRight },
   { id: 'settings', label: 'Ajustes', icon: Settings },
 ];
 

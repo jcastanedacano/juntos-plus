@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react
 import './App.css';
 import { useIsAuthenticated } from '@azure/msal-react';
 import { Transaction, SavingsGoal, Budget, RecurringTransaction, Account, DetectedSubscription, CreditStatementHistoryEntry, Investment } from './types';
-import { getFxRates, refreshFxRates } from './utils/fx';
+import { getFxRates, refreshFxRates, fijarMonedaBase } from './utils/fx';
 import { getMyOwnerRole } from './utils/userIdentity';
 import { storageAPI as storage } from './utils/storage';
 import { getLastLoadError } from './utils/storageAPI';
@@ -386,6 +386,9 @@ function App() {
 
       setTransactions(txsAfterEchoClean);
       setCurrency(loadedCurrency);
+      // Las tasas se guardan ancladas a soles y se derivan a la moneda del
+      // hogar. Sin esto, un hogar en euros veria «1 USD = 3,50 €».
+      fijarMonedaBase(loadedCurrency);
       setGoals(goalsWithDefaults);
       setBudgets(loadedBudgets);
       setRecurring(recAfterRetro);

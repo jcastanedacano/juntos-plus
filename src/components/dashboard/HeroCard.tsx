@@ -190,7 +190,9 @@ export function HeroCard({
             className="hero-fx-chip"
             title={`Tipo de cambio · USD ${fxRates.USD.toFixed(2)} · EUR ${fxRates.EUR.toFixed(2)} (editable en Pareja)`}
           >
-            TC <strong>S/ {fxRates.USD.toFixed(2)}</strong> / USD
+            {/* El simbolo sale de la moneda del hogar, no fijo: con la tasa ya
+                convertida, un «S/» aqui contaba euros llamandolos soles. */}
+            TC <strong>{currencySymbol(currency)} {fxRates.USD.toFixed(2)}</strong> / USD
           </span>
         </div>
         <div>

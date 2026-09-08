@@ -39,6 +39,7 @@ no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 | **Recurrentes y suscripciones** | Detecta cargos que se repiten a partir de tus movimientos, avisa cuando cambia el precio, cuando falta un cobro y cuando hay duplicados. Pausa un recurrente automáticamente si registras el pago antes de tiempo, y lo reanuda solo al llegar la fecha. |
 | **Nosotros** | Reparto por persona de lo que ya está asignado, y una cola de movimientos sin autor para asignarlos rápido. |
 | **Tarjeta de crédito** | Utilización, fecha límite, ciclo, TEA, simulador de pago, estrategia de cuotas y proyección al cierre. Importa el PDF del estado de cuenta del BCP y lo parsea en el navegador. |
+| **Hogares** | Los datos pertenecen a un hogar, no a una cuenta: sus dos personas ven exactamente lo mismo. Quien llega nuevo estrena el suyo, vacío, elige la moneda en la que lleva las cuentas, y para compartirlo llama a la otra persona por su correo. Al aceptar, lo que cada quien había apuntado por separado se une. |
 
 **Además:** presupuestos, metas de ahorro, patrimonio neto, recap anual,
 notificaciones push con un resumen diario y tipo de cambio en vivo.
@@ -51,10 +52,10 @@ Conviene ser explícito, porque son datos financieros.
 
 | | |
 |---|---|
-| **Almacenamiento** | Un archivo JSON en tu propio servidor, en la ruta que indique `DATA_DIR`. Sin base de datos ni servicio de terceros. |
-| **Acceso** | Detrás de Microsoft Entra ID. Cada petición valida el token contra las claves públicas de tu tenant. |
+| **Almacenamiento** | Un archivo JSON por hogar en tu propio servidor, bajo la ruta que indique `DATA_DIR`. Sin base de datos ni servicio de terceros. Un hogar nunca lee el archivo de otro: se resuelve desde la identidad de quien pregunta, no desde lo que pida. |
+| **Acceso** | Microsoft Entra ID o Google, a elección de quien entra. El token de Entra se valida contra las claves públicas de tu tenant; con Google el intercambio lo hace tu servidor y emite su propia sesión firmada. |
 | **PDF del banco** | Se parsean en el navegador con pdf.js. El archivo no se sube a ningún sitio. |
-| **Llamadas externas** | Solo Entra ID para el login, Microsoft Graph si usas la sincronización de correo, y un proveedor de tipo de cambio. |
+| **Llamadas externas** | Entra ID y, si lo activas, Google para el login; Microsoft Graph si usas la sincronización de correo; y un proveedor de tipo de cambio. |
 
 > [!IMPORTANT]
 > Si despliegas esto, el servidor es tuyo y los datos también. La
@@ -79,6 +80,17 @@ Edita `.env` con los identificadores de tu aplicación de Entra ID. Los cuatro
 valores de Azure son obligatorios: sin ellos ni el servidor ni el frontend
 arrancan, a propósito.
 
+La entrada con Google es opcional. Con `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+y `SESSION_SECRET` puestas, el servidor la habilita y `VITE_GOOGLE_ACTIVO=true`
+pinta el botón. Sin ellas la aplicación funciona igual, solo con Entra. El URI
+de redirección que hay que registrar en Google Cloud es
+`https://TU-DOMINIO/auth/google/callback`.
+
+`MIEMBROS_PRINCIPAL` nombra, por correo o por identificador, a quién pertenecen
+los datos que ya existían antes del reparto por hogares. Sin esa lista nadie los
+hereda, ni siquiera sus dueños: falla cerrada a propósito, porque la
+alternativa es que los reclame quien llegue primero.
+
 ```bash
 npm run dev     # frontend en http://localhost:3008
 npm start       # API en http://localhost:3007
@@ -95,7 +107,7 @@ npm run lint
 ### Stack
 
 React 18 · TypeScript · Vite · PWA con Workbox · Express · Recharts · MSAL
-(Microsoft Entra ID) · date-fns · Vitest.
+(Microsoft Entra ID) · OAuth de Google con sesión propia · date-fns · Vitest.
 
 Sin base de datos: un archivo JSON y un candado de escritura.
 

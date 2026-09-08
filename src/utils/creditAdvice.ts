@@ -96,7 +96,7 @@ function utilizationAdvice(snapshot: CreditSnapshot): CreditAdvice[] {
       group: 'utilization',
       severity: 'success',
       title: 'Utilización saludable',
-      body: `${Math.round(utilization * 100)}% — estás dentro del rango que el banco premia (< 30%). Mantenelo así pagando antes del cierre.`,
+      body: `${Math.round(utilization * 100)}%, estás dentro del rango que el banco premia (< 30%). Mantenelo así pagando antes del cierre.`,
       highlight: `${Math.round(utilization * 100)}%`,
     });
   }
@@ -177,9 +177,9 @@ export function rankInstallments(snapshot: CreditSnapshot): InstallmentAdvice[] 
     } else if (r.tea > 0.9) {
       r.reason = 'TEA muy alta (cancelar libera línea de crédito)';
     } else if (r.remainingInstallments > 12) {
-      r.reason = 'Plazo largo — interés acumulado considerable';
+      r.reason = 'Plazo largo: interés acumulado considerable';
     } else {
-      r.reason = 'Costo moderado — cancelá solo si tenés liquidez';
+      r.reason = 'Costo moderado: cancelá solo si tenés liquidez';
     }
   });
 

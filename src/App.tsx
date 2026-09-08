@@ -837,7 +837,7 @@ function App() {
         handleImport(all);
         addToast({
           type: 'success',
-          message: `Importadas ${all.length} transacciones desde PDF — ${summary.join(' · ')}.`,
+          message: `Importadas ${all.length} transacciones desde PDF: ${summary.join(' · ')}.`,
           duration: 10000,
         });
       } catch (err: unknown) {
@@ -1261,7 +1261,7 @@ function App() {
                 type: isExpense ? 'expense' : 'income',
                 amount: txAmount,
                 category: isExpense ? 'other-expense' : 'other-income',
-                description: `Ajuste de saldo (${target.name}) — diferencia con BCP${historical ? ' [histórico]' : ''}`,
+                description: `Ajuste de saldo (${target.name}), diferencia con BCP${historical ? ' [histórico]' : ''}`,
                 date: date.toISOString().slice(0, 10),
                 accountId: target.id,
                 currency: 'PEN',
@@ -1643,7 +1643,7 @@ function App() {
                     type: isExpense ? 'expense' : 'income',
                     amount,
                     category: isExpense ? 'other-expense' : 'other-income',
-                    description: `Ajuste de saldo (${target.name}) — diferencia con BCP${r.historical ? ' [histórico]' : ''}`,
+                    description: `Ajuste de saldo (${target.name}), diferencia con BCP${r.historical ? ' [histórico]' : ''}`,
                     date: date.toISOString().slice(0, 10),
                     accountId: target.id,
                     currency: 'PEN',

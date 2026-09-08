@@ -157,7 +157,7 @@ export function CreditCardView({ accounts, transactions, recurring, currency, on
   const fmtShort = (iso?: string) =>
     iso ? new Date(iso).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }) : '';
   const cycleText = (stmt?.cycleStart && stmt?.cycleEnd)
-    ? `${fmtShort(stmt.cycleStart)} — ${fmtShort(stmt.cycleEnd)}`
+    ? `${fmtShort(stmt.cycleStart)} al ${fmtShort(stmt.cycleEnd)}`
     : null;
   const closeDate = stmt?.cycleEnd ? fmtShort(stmt.cycleEnd) : null;
 
@@ -313,7 +313,7 @@ export function CreditCardView({ accounts, transactions, recurring, currency, on
             <div className="credit-warning-detail">
               Pagas <strong>{formatCurrency(snapshot.interestIfMinimumUSD, 'USD')}</strong> de
               intereses este ciclo (TEA USD {fmtPct(snapshot.teaUSD)}). Conviene priorizar
-              liquidar la deuda en dólares — la TEA en USD también es alta.
+              liquidar la deuda en dólares: la TEA en USD también es alta.
             </div>
           </div>
         </div>
@@ -431,7 +431,7 @@ export function CreditCardView({ accounts, transactions, recurring, currency, on
             </div>
             <div className="credit-usd-note">
               💡 La TEA en USD ({fmtPct(snapshot.teaUSD)}) suele ser menor que la PEN ({fmtPct(snapshot.teaPEN)}),
-              pero igual conviene liquidar pronto — el tipo de cambio puede subir y volverla más cara en soles.
+              pero igual conviene liquidar pronto, porque el tipo de cambio puede subir y volverla más cara en soles.
             </div>
           </div>
         )}
@@ -486,7 +486,7 @@ export function CreditCardView({ accounts, transactions, recurring, currency, on
             })}
           </div>
           <div className="credit-installments-note">
-            💡 Pedí el <strong>saldo de prepago</strong> a tu banco antes de pagar — descuentan el interés no-devengado y suele haber una comisión chica.
+            💡 Pedí el <strong>saldo de prepago</strong> a tu banco antes de pagar: descuentan el interés no-devengado y suele haber una comisión chica.
           </div>
         </div>
       )}
@@ -1157,7 +1157,7 @@ function FxDriftAlert({ saldoUSD, history, currentRate }: FxDriftAlertProps) {
         <div className="credit-fx-alert-text">
           Tu saldo USD ({formatCurrency(saldoUSD, 'USD')}) equivale ahora a
           {' '}<strong>{formatCurrency(equivalentNow, 'PEN')}</strong>
-          {' '}—{' '}
+          {', '}
           <strong style={{ color: isWorse ? 'var(--accent-red)' : 'var(--accent-green)' }}>
             {isWorse ? '+' : ''}{formatCurrency(delta, 'PEN')}
           </strong>

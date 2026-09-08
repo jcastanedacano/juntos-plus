@@ -33,7 +33,7 @@ export function clearPrivacyLogs(): void {
 export function logImportEvent(fileName: string, transactionCount: number): void {
   addPrivacyLog(
     'Importación de archivo',
-    `Se importaron ${transactionCount} transacciones del archivo "${fileName}". El archivo original no fue almacenado — solo se guardaron las transacciones normalizadas.`
+    `Se importaron ${transactionCount} transacciones del archivo "${fileName}". El archivo original no fue almacenado: solo se guardaron las transacciones normalizadas.`
   );
 }
 

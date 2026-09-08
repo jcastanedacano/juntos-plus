@@ -144,7 +144,7 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
             <input
               type="email"
               className="form-input"
-              value={currentEmail || '— no detectado —'}
+              value={currentEmail || '(no detectado)'}
               disabled
               style={{ opacity: 0.6 }}
             />
@@ -186,7 +186,7 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
           }}>
             <span>
               {fxMeta.manual
-                ? 'Fijado a mano — no se actualiza solo.'
+                ? 'Fijado a mano: no se actualiza solo.'
                 : fxMeta.updatedAt
                   ? `Automático · actualizado ${new Date(fxMeta.updatedAt).toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`
                   : 'Automático · se actualiza al abrir la app.'}

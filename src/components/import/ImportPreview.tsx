@@ -19,7 +19,7 @@ export function ImportPreview({ transactions, currency, onEditCategory, onEditTy
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem' }}>
-        Vista previa — {transactions.length} transacciones
+        Vista previa: {transactions.length} transacciones
       </h3>
 
       {/* Summary */}

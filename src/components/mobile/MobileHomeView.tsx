@@ -191,6 +191,11 @@ function Resumen({
     () => serieRitmo(dias, presupuesto, r.diasTranscurridos, TOPE, BASE),
     [dias, presupuesto, r.diasTranscurridos]
   );
+  // Poligono del area bajo la linea real: la propia serie, y de vuelta por la
+  // linea base hasta el origen. Con un solo dia transcurrido sale de ancho
+  // cero y no se ve, que es justo lo que corresponde.
+  const areaRitmo = `${serie.puntos} ${serie.xHoy.toFixed(2)},${BASE} 0,${BASE}`;
+
   const acumuladoHoy = dias
     .slice(0, r.diasTranscurridos)
     .reduce((a, d) => a + d.total, 0);
@@ -251,17 +256,23 @@ function Resumen({
           x1={serie.xHoy} y1={TOPE - 2} x2={serie.xHoy} y2={BASE}
           className="cl-trend-hoy" vectorEffect="non-scaling-stroke"
         />
+        {/* El area bajo la curva va ANTES del trazo para que la linea quede
+            por encima del tinte y no se lea difuminada. */}
+        <polygon points={areaRitmo} className="cl-trend-area" />
         <polyline points={serie.puntos} className="cl-trend-real" vectorEffect="non-scaling-stroke" />
       </svg>
+      {/* La escala es del grafico: va pegada a el. La leyenda explica que es
+          cada trazo y puede ir despues. Al reves se leia «1 sep / 30» como si
+          fuera parte de la leyenda. */}
+      <div className="cl-chart-axis">
+        <span className="cl-num">1 {mesLabel.slice(0, 3)}</span>
+        <span className="cl-num">{dias.length}</span>
+      </div>
       {/* Sin leyenda, dos lineas sin nombre no son un grafico. */}
       <div className="cl-trend-legend">
         <span><i className="cl-swatch real" /> lo que llevas</span>
         <span><i className="cl-swatch ref" /> ritmo parejo</span>
         <span><i className="cl-swatch hoy" /> hoy</span>
-      </div>
-      <div className="cl-chart-axis">
-        <span className="cl-num">1 {mesLabel.slice(0, 3)}</span>
-        <span className="cl-num">{dias.length}</span>
       </div>
 
       <div className="cl-kicker cl-section-kicker">Lo más grande del mes</div>
@@ -394,7 +405,7 @@ function Nosotros({
             <div className="cl-person-avatar cl-num">{p.nombre.charAt(0).toUpperCase()}</div>
             <div className="cl-person-name">{p.nombre}</div>
             <div className="cl-amount is-m cl-person-amount">
-              {sinAsignar ? <span style={{ color: 'var(--color-neutral-700)' }}>—</span> : money(p.monto)}
+              {sinAsignar ? <span className="cl-person-vacio">—</span> : money(p.monto)}
             </div>
           </div>
         ))}

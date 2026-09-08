@@ -89,7 +89,11 @@ jobs:
         # no de rangos que podrian resolver distinto alla.
         run: |
           mkdir -p package
-          cp server.cjs package/
+          # Todos los .cjs de la raiz, no solo server.cjs: el dia que se partio
+          # el modulo de Google en su propio archivo, copiar uno a uno habria
+          # desplegado un servidor que no arranca --MODULE_NOT_FOUND-- y el
+          # health check lo habria descubierto ya en produccion.
+          cp *.cjs package/
           cp -r dist package/dist
           node -e "
             const deps = ['express','cors','compression','jsonwebtoken','jwks-rsa','dotenv','web-push'];

@@ -770,7 +770,16 @@ app.post('/api/hogar', async (req, res) => {
     const yaTiene = await hogarDe(req);
     if (yaTiene) return res.json({ hogarId: yaTiene, creado: false });
     const id = await crearHogar(req, req.body && req.body.nombre, req.body && req.body.moneda);
-    if (!id) return res.status(400).json({ error: 'Token sin identidad utilizable' });
+    if (!id) {
+      // Sin oid ni sub no hay a quien atribuir el hogar. Se registran los
+      // NOMBRES de las claims, nunca sus valores: para diagnosticar hace falta
+      // saber que trae el token, no que dice.
+      console.error(
+        '[hogares] token sin identidad utilizable. emisor=%s claims=%s',
+        req.emisor, Object.keys(req.user || {}).join(',')
+      );
+      return res.status(400).json({ error: 'Token sin identidad utilizable', codigo: 'sin_identidad' });
+    }
     console.log(`[hogares] ${correoDelToken(req.user) || id} estrena hogar ${id}`);
     res.json({ hogarId: id, creado: true });
   } catch (err) {

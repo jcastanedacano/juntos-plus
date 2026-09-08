@@ -191,13 +191,13 @@ export async function readPdfFile(
       text = extracted;
     } else {
       // Sparse text → scanned PDF, use OCR
-      onProgress?.('PDF escaneado detectado — iniciando OCR…', 62);
+      onProgress?.('PDF escaneado detectado, iniciando OCR…', 62);
       text = await extractTextWithOcr(file, onProgress);
       isOcr = true;
     }
   } catch {
     // PDF.js failed completely → try OCR
-    onProgress?.('Texto no extraíble — usando OCR…', 30);
+    onProgress?.('Texto no extraíble, usando OCR…', 30);
     text = await extractTextWithOcr(file, onProgress);
     isOcr = true;
   }

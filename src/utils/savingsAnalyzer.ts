@@ -66,7 +66,7 @@ export function analyzeSavings(subscriptions: DetectedSubscription[]): CutSugges
       monthlyCost: Math.round(totalSmall * 100) / 100,
       annualCost: Math.round(totalSmall * 12 * 100) / 100,
       reason: 'phantom',
-      reasonLabel: `${smallSubs.length} pagos pequeños suman S/ ${totalSmall.toFixed(0)}/mes — ${smallSubs.map(s => s.normalizedName).join(', ')}`,
+      reasonLabel: `${smallSubs.length} pagos pequeños suman S/ ${totalSmall.toFixed(0)}/mes: ${smallSubs.map(s => s.normalizedName).join(', ')}`,
       relatedSubscriptionIds: smallSubs.map(s => s.id),
       isDismissed: false,
       reminderDate: null,

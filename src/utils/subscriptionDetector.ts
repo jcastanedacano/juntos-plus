@@ -139,7 +139,7 @@ function detectMissingChargeAlert(
   if (daysPastDue > graceDays) {
     return {
       type: 'missing_charge',
-      message: `Cobro esperado hace ${daysPastDue} días (${new Date(nextExpectedDate).toLocaleDateString('es-PE')}) — no detectado`,
+      message: `Cobro esperado hace ${daysPastDue} días (${new Date(nextExpectedDate).toLocaleDateString('es-PE')}), no detectado`,
       severity: 'warning',
       date: nextExpectedDate,
     };

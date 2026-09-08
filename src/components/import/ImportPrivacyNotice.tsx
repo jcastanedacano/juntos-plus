@@ -16,7 +16,7 @@ export function ImportPrivacyNotice() {
       <Shield size={18} style={{ color: 'var(--success)', flexShrink: 0 }} />
       <div>
         <strong style={{ color: 'var(--success)' }}>Procesamiento local</strong>
-        {' — '}
+        {': '}
         Tus archivos se procesan directamente en tu navegador y no se almacenan en ningún servidor.
         Solo se guardan las transacciones normalizadas.
       </div>

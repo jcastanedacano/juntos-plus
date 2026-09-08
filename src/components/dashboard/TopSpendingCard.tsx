@@ -280,7 +280,7 @@ export function TopSpendingCard({ transactions, recurring = [], currency, select
       {drawerOpen && <div className="top-spending-drawer-backdrop" onClick={() => setDrawerOpen(false)} />}
       <div className={`top-spending-drawer ${drawerOpen ? 'top-spending-drawer--open' : ''}`}>
         <div className="top-spending-drawer-header">
-          <h3>Top — {tabLabels[mode]}</h3>
+          <h3>Top: {tabLabels[mode]}</h3>
           <button onClick={() => setDrawerOpen(false)} aria-label="Cerrar"><X size={18} /></button>
         </div>
         <div className="top-spending-drawer-body">

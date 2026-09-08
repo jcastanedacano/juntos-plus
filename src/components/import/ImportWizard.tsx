@@ -211,8 +211,8 @@ export function ImportWizard({ onImport, onClose, currency, initialFile }: Impor
               {fileName && (
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
                   {fileName}
-                  {detectedBank && ` — Formato: ${detectedBank}`}
-                  {isOcrUsed && ' — OCR aplicado'}
+                  {detectedBank && `, formato: ${detectedBank}`}
+                  {isOcrUsed && ', OCR aplicado'}
                 </div>
               )}
             </div>

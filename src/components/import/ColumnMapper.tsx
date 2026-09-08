@@ -65,7 +65,7 @@ export function ColumnMapper({ headers, mapping, sampleRows, onMappingChange }: 
                 fontSize: '0.85rem',
               }}
             >
-              <option value="">— No asignada —</option>
+              <option value="">(sin asignar)</option>
               {headers.map(h => (
                 <option key={h} value={h}>{h}</option>
               ))}

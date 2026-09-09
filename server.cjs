@@ -879,6 +879,91 @@ app.post('/api/hogar/invitacion/rechazar', async (req, res) => {
   }
 });
 
+/**
+ * Cambia la moneda del hogar, para cuando se eligio mal al crearlo.
+ *
+ * NO convierte ningun numero: inventar un tipo de cambio historico es peor que
+ * no ofrecer esto. Lo que hace es marcar con la moneda VIEJA todo registro que
+ * no la traiga explicita, antes de cambiar la del hogar. Sin ese sello, un
+ * registro sin moneda se lee como «en la moneda del hogar», y cambiar el hogar
+ * reinterpretaria en silencio su cifra bajo otro simbolo: los mismos 1450 que
+ * eran soles del alquiler pasarian a leerse como 1450 euros.
+ *
+ * Cuentas e inversiones no tienen moneda propia en el modelo de datos, asi que
+ * sus saldos SI quedan leidos bajo el simbolo nuevo sin que el numero cambie.
+ * Es la unica limitacion real, y el cliente la explica antes de pedir
+ * confirmacion.
+ */
+const COLECCIONES_CON_MONEDA = ['transactions', 'budgets', 'goals', 'recurring'];
+
+async function cambiarMonedaHogar(hogarId, monedaCruda) {
+  const nueva = String(monedaCruda || '').trim().toUpperCase();
+  if (!MONEDAS.includes(nueva)) return { error: 'moneda_invalida' };
+
+  const archivo = archivoDeHogar(hogarId);
+  let data;
+  try {
+    data = JSON.parse(await fs.readFile(archivo, 'utf8'));
+  } catch {
+    return { error: 'hogar_ilegible' };
+  }
+
+  const vieja = data.currency || 'PEN';
+  if (vieja === nueva) return { moneda: nueva, marcados: 0, cambio: false };
+
+  // Antes de tocar nada: es dinero real, y esto reescribe el archivo entero.
+  await dailyBackup(hogarId);
+
+  let marcados = 0;
+  for (const col of COLECCIONES_CON_MONEDA) {
+    if (!Array.isArray(data[col])) continue;
+    for (const item of data[col]) {
+      if (item && typeof item === 'object' && !item.currency) {
+        item.currency = vieja;
+        marcados++;
+      }
+    }
+  }
+  data.currency = nueva;
+
+  await fs.writeFile(archivo, JSON.stringify(data, null, 2));
+
+  // Releer y comprobar antes de dar el cambio por bueno, igual que la
+  // migracion: un disco lleno o un corte a mitad de escritura dejan un
+  // archivo truncado que parece existir.
+  try {
+    const releido = JSON.parse(await fs.readFile(archivo, 'utf8'));
+    if (releido.currency !== nueva) throw new Error('la moneda no quedo escrita');
+    for (const col of COLECCIONES_CON_MONEDA) {
+      const antes = (data[col] || []).length;
+      const despues = (releido[col] || []).length;
+      if (antes !== despues) throw new Error(`${col}: ${antes} antes, ${despues} despues`);
+    }
+  } catch (err) {
+    console.error('[hogares] cambio de moneda no verificado:', err.message);
+    return { error: 'no_verificado' };
+  }
+
+  console.log(`[hogares] ${hogarId}: moneda ${vieja} -> ${nueva} (${marcados} registros marcados)`);
+  return { moneda: nueva, marcados, cambio: true };
+}
+
+app.post('/api/hogar/moneda', async (req, res) => {
+  try {
+    if (!(await conHogar(req, res))) return;
+    const r = await cambiarMonedaHogar(req.hogarId, req.body && req.body.moneda);
+    if (r.error) {
+      const estado = r.error === 'moneda_invalida' ? 400 : 500;
+      return res.status(estado).json({ codigo: r.error });
+    }
+    const meta = r.cambio ? await bumpVersion(req.hogarId) : await readMeta(req.hogarId);
+    res.json({ moneda: r.moneda, marcados: r.marcados, version: meta.version });
+  } catch (err) {
+    console.error('[hogares] cambio de moneda fallido:', err.message);
+    res.status(500).json({ error: 'No se pudo cambiar la moneda' });
+  }
+});
+
 app.get('/api/data', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   try {
@@ -1437,6 +1522,7 @@ module.exports = {
   migrarAHogares, hogarDe, crearHogar,
   invitar, invitacionesPara, aceptarInvitacion, rechazarInvitacion, MONEDAS,
   fusionarDatos, consolidar, miembrosDe, nombradosDe,
+  cambiarMonedaHogar, COLECCIONES_CON_MONEDA,
 };
 
 // Start server

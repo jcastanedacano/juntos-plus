@@ -3,12 +3,12 @@ import { X, RotateCcw, Send, Check } from 'lucide-react';
 import { DEFAULT_OWNER_LABELS, getOwnerLabels, setOwnerLabels } from '../../utils/ownerLabels';
 import { DEFAULT_FX_RATES, getFxRates, setFxRates, getFxMeta, clearFxOverride, getMonedaBase, simboloDe, relativas } from '../../utils/fx';
 import { getCurrentUserEmail, setUserEmailMap } from '../../utils/userIdentity';
-import { consultarHogar, invitarAlHogar, explicar, EstadoHogar, MONEDAS } from '../../utils/hogar';
+import { consultarHogar, invitarAlHogar, cambiarMonedaHogar, explicar, EstadoHogar, MONEDAS } from '../../utils/hogar';
 
 interface OwnerLabelsModalProps {
   onClose: () => void;
   /** Seccion a la que abrir: la fila de Ajustes que lo invoca ya dice cual. */
-  foco?: 'pareja' | 'cambio';
+  foco?: 'pareja' | 'cambio' | 'moneda';
 }
 
 export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
@@ -37,6 +37,11 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
   const [invitado, setInvitado] = useState('');
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
+  // Seleccion pendiente de confirmar: un clic no cambia nada por si solo,
+  // porque esto reescribe datos financieros reales y recarga la aplicacion.
+  const [monedaElegida, setMonedaElegida] = useState<string | null>(null);
+  const [monedaBusy, setMonedaBusy] = useState(false);
+  const [avisoMoneda, setAvisoMoneda] = useState<string | null>(null);
 
   // Quien esta dentro lo dice el servidor, no el navegador: es el token el que
   // trae el correo, y el mapa de identidades depende de acertarlo.
@@ -76,15 +81,32 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
   useEffect(() => {
     // Abrir directo en la seccion pedida: la fila de Ajustes ya prometio a
     // cual iba, y hacer buscar al usuario lo desmiente.
-    if (foco === 'cambio') {
+    if (foco === 'cambio' || foco === 'moneda') {
+      const id = foco === 'moneda' ? 'ol-moneda' : 'ol-cambio';
       requestAnimationFrame(() => {
-        document.getElementById('ol-cambio')?.scrollIntoView({ block: 'start' });
+        document.getElementById(id)?.scrollIntoView({ block: 'start' });
       });
     }
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, foco]);
+
+  const confirmarMoneda = async () => {
+    if (!monedaElegida) return;
+    setMonedaBusy(true);
+    setAvisoMoneda(null);
+    const r = await cambiarMonedaHogar(monedaElegida);
+    if (r.ok) {
+      // Recarga completa a proposito: la moneda del hogar vive en un modulo
+      // que se fija una sola vez al cargar (fijarMonedaBase), y desde aqui no
+      // hay forma limpia de propagarla a todo lo que ya la leyo.
+      window.location.reload();
+      return;
+    }
+    setMonedaBusy(false);
+    setAvisoMoneda(explicar(r.codigo));
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -247,6 +269,92 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
                 </p>
               )}
             </div>
+          )}
+
+          <div style={{
+            marginTop: 18,
+            paddingTop: 14,
+            borderTop: '1px solid var(--border)',
+            fontSize: 11.5,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--text-muted)',
+            fontWeight: 600,
+            marginBottom: 10,
+          }}>
+            <span id="ol-moneda">Moneda del hogar</span>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.5 }}>
+            En qué moneda apuntáis los gastos. Si se eligió mal al crear el
+            hogar, se puede corregir: no convierte ningún importe, marca lo ya
+            registrado con la moneda actual antes de cambiar, y esos movimientos
+            siguen mostrándose y sumándose bien, como cualquier gasto en otra
+            moneda. Los saldos de cuentas y las inversiones no tienen moneda
+            propia, así que sí quedan leídos con el símbolo nuevo.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
+            {MONEDAS.map(m => {
+              const activa = (monedaElegida ?? base) === m.codigo;
+              return (
+                <button
+                  key={m.codigo}
+                  type="button"
+                  disabled={monedaBusy}
+                  aria-pressed={activa}
+                  onClick={() => {
+                    setAvisoMoneda(null);
+                    setMonedaElegida(m.codigo === base ? null : m.codigo);
+                  }}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                    padding: '10px 6px', borderRadius: 10, cursor: monedaBusy ? 'default' : 'pointer',
+                    border: `1px solid ${activa ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                    background: activa ? 'rgba(108, 142, 239, 0.12)' : 'transparent',
+                    color: activa ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  }}
+                >
+                  <span style={{ fontSize: 16, fontWeight: 600 }}>{m.simbolo}</span>
+                  <span style={{ fontSize: 11 }}>{m.nombre}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {monedaElegida && monedaElegida !== base && (
+            <div style={{
+              padding: 12, marginBottom: 12, borderRadius: 10,
+              border: '1px solid var(--border-color)', background: 'rgba(255, 255, 255, 0.03)',
+            }}>
+              <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', margin: '0 0 10px', lineHeight: 1.5 }}>
+                Cambiar de <strong>{simboloDe(base)}</strong> a <strong>{simboloDe(monedaElegida)}</strong>.
+                La aplicación se recarga al terminar.
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="cancel-btn"
+                  disabled={monedaBusy}
+                  onClick={() => setMonedaElegida(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="submit-btn"
+                  disabled={monedaBusy}
+                  onClick={confirmarMoneda}
+                >
+                  {monedaBusy ? 'Cambiando…' : 'Confirmar cambio'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {avisoMoneda && (
+            <p style={{ fontSize: 12, color: '#ff8f8f', marginTop: -4, marginBottom: 12, lineHeight: 1.45 }}>
+              {avisoMoneda}
+            </p>
           )}
 
           <div style={{

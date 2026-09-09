@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react';
 import { Transaction } from '../../types';
 import { getCategoryById } from '../../utils/categoryHelpers';
 import { formatCurrency } from '../../utils/calculations';
+import { getMonedaBase } from '../../utils/fx';
 import { normalizeDescription } from '../../utils/descriptionNormalizer';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -127,7 +128,7 @@ export const TransactionRow = memo(function TransactionRow({
       {/* Amount */}
       <div className={`txn-row-amount ${transaction.type === 'income' ? 'txn-amount-positive' : 'txn-amount-negative'}`}>
         <span className="txn-amount-sign">{transaction.type === 'income' ? '+' : '-'}</span>
-        {formatCurrency(transaction.amount, transaction.currency || 'PEN')}
+        {formatCurrency(transaction.amount, transaction.currency || getMonedaBase())}
       </div>
 
       {/* Actions */}

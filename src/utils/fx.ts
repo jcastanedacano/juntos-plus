@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Transaction, CurrencyType } from '../types';
+import { Transaction, RecurringTransaction, Budget, SavingsGoal, CurrencyType } from '../types';
 import { tokenOpcional } from '../auth/getToken';
 import { getAPIUrl } from './storageAPI';
 
 export type { FxRates } from './fxTasas';
 export {
   DEFAULT_FX_RATES, simboloDe, relativas, aPen,
-  localeDe, localeActual, fijarMonedaBase, getMonedaBase,
+  localeDe, localeActual, getMonedaBase,
 } from './fxTasas';
-import { FxRates, DEFAULT_FX_RATES, relativas, aPen, getMonedaBase } from './fxTasas';
+import {
+  FxRates, DEFAULT_FX_RATES, relativas, aPen, getMonedaBase,
+  convertirImporte, proyectarABase, proyectarMetaABase,
+  fijarMonedaBase as fijarMonedaBaseSinAvisar,
+} from './fxTasas';
 
 const STORAGE_KEY = 'juntos:fxRates';
 const CHANGE_EVENT = 'juntos:fxRates:change';
@@ -43,6 +47,25 @@ function writeStorage(rates: FxRates, meta: Partial<FxMeta>): void {
     catch { return {}; }
   })();
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...rates, ...meta }));
+  window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
+}
+
+/**
+ * Fija la moneda del hogar Y avisa a quien la este mirando.
+ *
+ * fxTasas.fijarMonedaBase() solo muta una variable de modulo: no dice a nadie
+ * que cambio. useFxRates() cachea la tasa en un estado de React que solo se
+ * recalcula si oye CHANGE_EVENT, asi que sin este aviso quedaba con la tasa
+ * de la moneda por defecto para siempre --hasta el proximo reload, o hasta
+ * que alguien editara el tipo de cambio a mano por otro motivo.
+ *
+ * Medido en el navegador: un hogar en euros mostraba «$50 -> 167,72 €»,
+ * exactamente 50 * 3.3543 --la tasa ANCLADA A SOLES, sin dividir entre el
+ * valor del euro-- porque useFxRates() se habia quedado con la tasa de
+ * cuando la base todavia era el valor por defecto.
+ */
+export function fijarMonedaBase(c: string | undefined): void {
+  fijarMonedaBaseSinAvisar(c);
   window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
 }
 
@@ -120,30 +143,40 @@ export async function refreshFxRates(force = false): Promise<FxRates> {
 
 /** Convierte un importe a la moneda del hogar. */
 export function toBase(amount: number, currency: CurrencyType | undefined, rates?: FxRates): number {
-  const r = rates || getFxRates();
-  const c = (currency || getMonedaBase()) as CurrencyType;
-  const rate = r[c] || 1;
-  return amount * rate;
+  return convertirImporte(amount, currency, getMonedaBase(), rates || getFxRates());
 }
 
-/** Convenience for transactions — returns the PEN-equivalent amount. */
+/** Convenience for transactions — returns the base-currency-equivalent amount. */
 export function txBaseAmount(tx: Pick<Transaction, 'amount' | 'currency'>, rates?: FxRates): number {
   return toBase(tx.amount, tx.currency as CurrencyType | undefined, rates);
 }
 
 /**
- * Project a list of transactions into the base currency. The returned copies
- * have `amount` rewritten to PEN-equivalent and `currency` set to PEN — useful
- * for feeding the existing calculation helpers that assume a single currency.
- * The originals are NOT mutated; downstream UI that wants to show the source
- * amount + currency must read from the un-projected list.
+ * Proyecta transacciones, recurrentes o presupuestos a la moneda del hogar:
+ * mismos objetos, importe convertido, moneda puesta a la base. Sirve para
+ * alimentar los calculos que asumen una sola moneda --disponible real, ritmo,
+ * 50/30/20-- sin que ellos tengan que saber de tipos de cambio.
+ *
+ * Los originales NO se mutan: quien quiera enseñar el importe y la moneda de
+ * origen de una fila sigue leyendo de la lista sin proyectar.
  */
 export function projectToBase(transactions: Transaction[], rates?: FxRates): Transaction[] {
-  const r = rates || getFxRates();
-  return transactions.map(t => {
-    if (!t.currency || t.currency === getMonedaBase()) return t;
-    return { ...t, amount: txBaseAmount(t, r), currency: getMonedaBase() as CurrencyType };
-  });
+  return proyectarABase(transactions, getMonedaBase(), rates || getFxRates());
+}
+
+/** Igual que projectToBase, para recurrentes. */
+export function projectRecurringToBase(recurring: RecurringTransaction[], rates?: FxRates): RecurringTransaction[] {
+  return proyectarABase(recurring, getMonedaBase(), rates || getFxRates());
+}
+
+/** Igual que projectToBase, para presupuestos. */
+export function projectBudgetsToBase(budgets: Budget[], rates?: FxRates): Budget[] {
+  return proyectarABase(budgets, getMonedaBase(), rates || getFxRates());
+}
+
+/** Metas llevan dos importes propios --meta y ahorrado--, no uno. */
+export function projectGoalsToBase(goals: SavingsGoal[], rates?: FxRates): SavingsGoal[] {
+  return proyectarMetaABase(goals, getMonedaBase(), rates || getFxRates());
 }
 
 // ─── React hook so components react to FX rate edits ──────────────

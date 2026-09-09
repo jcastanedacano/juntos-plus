@@ -1,6 +1,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { Budget, CurrencyType } from '../types';
 import { getCategoriesByType } from '../utils/categoryHelpers';
+import { getMonedaBase } from '../utils/fx';
 
 interface BudgetModalProps {
   onClose: () => void;
@@ -20,7 +21,7 @@ export const BudgetModal = ({ onClose, onSave, editingBudget, existingBudgets }:
       setCategoryId(editingBudget.categoryId);
       setAmount(editingBudget.amount.toString());
       setPeriod(editingBudget.period);
-      setCurrency(editingBudget.currency || 'PEN');
+      setCurrency(editingBudget.currency || getMonedaBase());
     }
   }, [editingBudget]);
 

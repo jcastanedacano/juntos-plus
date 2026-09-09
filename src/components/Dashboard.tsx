@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Transaction, SavingsGoal, Statistics, Account, RecurringTransaction, Budget } from '../types';
-import { useFxRates, projectToBase } from '../utils/fx';
+import { useFxRates, projectToBase, projectRecurringToBase, projectBudgetsToBase, projectGoalsToBase } from '../utils/fx';
 import {
   MonthlyPlan,
   calculateHealthScore,
@@ -74,33 +74,43 @@ export function Dashboard({
   };
 
   // ─── Currency normalization ──────────────────────────────────────
-  // Every transaction is projected to the base currency (PEN) using the
-  // user-configurable FX rates (default 3.50 PEN/USD, 4.00 PEN/EUR).
-  // Recurring items follow the same projection. The original currency
-  // tag stays on each row for the table view; here we feed already-
-  // converted numbers into the single-currency calculation helpers.
+  // Cada movimiento, recurrente, presupuesto y meta se proyecta a la moneda
+  // del hogar con las tasas configurables. La etiqueta de moneda original se
+  // conserva en cada fila para la vista de tabla; aqui se alimentan numeros
+  // ya convertidos a los calculos que asumen una sola moneda.
+  //
+  // recurringBase se hacia a mano y asumia PEN como base siempre --«r.currency
+  // === 'PEN'» para decidir si ya estaba en la base--, asi que en un hogar en
+  // otra moneda un recurrente en soles se daba por bueno sin convertir. Ahora
+  // usa el mismo proyector que transacciones, que mira la base real.
   const fxRates = useFxRates();
   const txnsBase = useMemo(
     () => projectToBase(transactions, fxRates),
     [transactions, fxRates]
   );
   const recurringBase = useMemo(
-    () => recurring.map(r => {
-      if (!r.currency || r.currency === 'PEN') return r;
-      const rate = fxRates[r.currency as keyof typeof fxRates] || 1;
-      return { ...r, amount: r.amount * rate, currency: 'PEN' as const };
-    }),
+    () => projectRecurringToBase(recurring, fxRates),
     [recurring, fxRates]
+  );
+  // budgets y goals nunca se proyectaban: calculateDisponibleReal sumaba su
+  // importe en crudo, ignorando su moneda si traian una distinta a la base.
+  const budgetsBase = useMemo(
+    () => projectBudgetsToBase(budgets, fxRates),
+    [budgets, fxRates]
+  );
+  const goalsBase = useMemo(
+    () => projectGoalsToBase(goals, fxRates),
+    [goals, fxRates]
   );
 
   // ─── Computed data (always on dominant-currency slice) ────────────
   const disponibleReal = useMemo(
-    () => calculateDisponibleReal(recurringBase, budgets, goals, txnsBase, selectedMonth),
-    [recurringBase, budgets, goals, txnsBase, selectedMonth]
+    () => calculateDisponibleReal(recurringBase, budgetsBase, goalsBase, txnsBase, selectedMonth),
+    [recurringBase, budgetsBase, goalsBase, txnsBase, selectedMonth]
   );
   const rule503020 = useMemo(
-    () => calculateRule503020(recurringBase, budgets, goals, txnsBase, selectedMonth),
-    [recurringBase, budgets, goals, txnsBase, selectedMonth]
+    () => calculateRule503020(recurringBase, budgetsBase, goalsBase, txnsBase, selectedMonth),
+    [recurringBase, budgetsBase, goalsBase, txnsBase, selectedMonth]
   );
   const monthEndForecast = useMemo(
     () => calculateMonthEndForecast(txnsBase, recurringBase, currency, selectedMonth),
@@ -112,8 +122,8 @@ export function Dashboard({
     [transactions, selectedMonth]
   );
   const healthScore = useMemo(
-    () => calculateHealthScore(txnsBase, goals, selectedMonth, budgets),
-    [txnsBase, goals, selectedMonth, budgets]
+    () => calculateHealthScore(txnsBase, goalsBase, selectedMonth, budgetsBase),
+    [txnsBase, goalsBase, selectedMonth, budgetsBase]
   );
   const cashflowData = useMemo(
     () => calculateCashflowForecast(txnsBase, recurringBase, selectedMonth),

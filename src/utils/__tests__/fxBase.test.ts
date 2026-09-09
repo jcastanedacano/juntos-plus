@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { relativas, aPen, simboloDe, DEFAULT_FX_RATES } from '../fxTasas';
+import {
+  relativas, aPen, simboloDe, DEFAULT_FX_RATES,
+  convertirImporte, proyectarABase, proyectarMetaABase,
+} from '../fxTasas';
 
 /**
  * Las tasas se guardan ancladas a soles y se derivan a la moneda del hogar.
@@ -68,5 +71,70 @@ describe('simbolos', () => {
   it('los valores por defecto siguen siendo soles por unidad', () => {
     expect(DEFAULT_FX_RATES.PEN).toBe(1);
     expect(DEFAULT_FX_RATES.USD).toBeGreaterThan(1);
+  });
+});
+
+describe('convertir un importe segun su moneda', () => {
+  const rel = relativas(PEN, 'EUR'); // hogar en euros: EUR=1, USD≈0.875, PEN=0.25
+
+  it('sin moneda propia, el importe no cambia: ya esta en la base', () => {
+    expect(convertirImporte(100, undefined, 'EUR', rel)).toBe(100);
+  });
+
+  it('en la propia moneda de la base, tampoco cambia', () => {
+    expect(convertirImporte(100, 'EUR', 'EUR', rel)).toBe(100);
+  });
+
+  it('en otra moneda, se multiplica por su tasa relativa', () => {
+    expect(convertirImporte(100, 'USD', 'EUR', rel)).toBeCloseTo(87.5, 10);
+    expect(convertirImporte(100, 'PEN', 'EUR', rel)).toBeCloseTo(25, 10);
+  });
+
+  it('una moneda sin tasa conocida no revienta: se trata como 1', () => {
+    expect(convertirImporte(100, 'BTC', 'EUR', rel)).toBe(100);
+  });
+});
+
+describe('proyectar una lista a la base', () => {
+  const rel = relativas(PEN, 'EUR');
+
+  it('deja intacto lo que ya esta en la base o no tiene moneda', () => {
+    const items = [{ id: 'a', amount: 10 }, { id: 'b', amount: 20, currency: 'EUR' }];
+    const salida = proyectarABase(items, 'EUR', rel);
+    expect(salida).toEqual(items);
+    // Sin moneda propia, ni siquiera se copia el objeto: menos trabajo en
+    // cada render de algo que no cambio.
+    expect(salida[0]).toBe(items[0]);
+  });
+
+  it('convierte lo que trae otra moneda y la deja marcada como la base', () => {
+    const items = [{ id: 'c', amount: 50, currency: 'USD' }];
+    const salida = proyectarABase(items, 'EUR', rel);
+    expect(salida[0].amount).toBeCloseTo(43.75, 10);
+    expect(salida[0].currency).toBe('EUR');
+  });
+
+  it('no muta el original: la lista de origen sigue en dolares', () => {
+    const items = [{ id: 'd', amount: 50, currency: 'USD' }];
+    proyectarABase(items, 'EUR', rel);
+    expect(items[0].currency).toBe('USD');
+    expect(items[0].amount).toBe(50);
+  });
+});
+
+describe('proyectar metas a la base', () => {
+  const rel = relativas(PEN, 'EUR');
+
+  it('convierte los DOS importes de una meta en otra moneda', () => {
+    const metas = [{ id: 'm1', targetAmount: 1000, currentAmount: 400, currency: 'USD' }];
+    const salida = proyectarMetaABase(metas, 'EUR', rel);
+    expect(salida[0].targetAmount).toBeCloseTo(875, 10);
+    expect(salida[0].currentAmount).toBeCloseTo(350, 10);
+    expect(salida[0].currency).toBe('EUR');
+  });
+
+  it('una meta sin moneda propia se queda igual', () => {
+    const metas = [{ id: 'm2', targetAmount: 1000, currentAmount: 400 }];
+    expect(proyectarMetaABase(metas, 'EUR', rel)).toEqual(metas);
   });
 });

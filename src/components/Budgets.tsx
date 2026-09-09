@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Budget, Transaction } from '../types';
 import { formatCurrency } from '../utils/calculations';
+import { getMonedaBase } from '../utils/fx';
 import { getCategoryInfo } from '../data/categories';
 import { Trash2, Edit2, Plus, AlertTriangle, Wallet, TrendingDown, PiggyBank, Lightbulb } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -306,9 +307,9 @@ export const Budgets = ({
                       <div>
                         <h4 className="bdg-item-name">{category?.name || budget.categoryId}</h4>
                         <p className="bdg-item-amounts">
-                          {formatCurrency(budget.spent, budget.currency || 'PEN')}
+                          {formatCurrency(budget.spent, budget.currency || getMonedaBase())}
                           <span className="bdg-item-sep"> / </span>
-                          {formatCurrency(budget.amount, budget.currency || 'PEN')}
+                          {formatCurrency(budget.amount, budget.currency || getMonedaBase())}
                         </p>
                       </div>
                     </div>
@@ -341,7 +342,7 @@ export const Budgets = ({
                       {pct.toFixed(0)}% usado
                     </span>
                     <span className="bdg-item-remaining" style={{ color: remaining < 0 ? 'var(--danger)' : 'var(--success)' }}>
-                      {remaining < 0 ? 'Excedido ' : 'Restan '}{formatCurrency(Math.abs(remaining), budget.currency || 'PEN')}
+                      {remaining < 0 ? 'Excedido ' : 'Restan '}{formatCurrency(Math.abs(remaining), budget.currency || getMonedaBase())}
                     </span>
                   </div>
 

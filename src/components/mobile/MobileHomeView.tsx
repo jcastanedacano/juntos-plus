@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { RecurringTransaction, Transaction } from '../../types';
 import { formatCurrency } from '../../utils/calculations';
+import { useFxRates, projectToBase, projectRecurringToBase } from '../../utils/fx';
 import { parseDateOnly } from '../../utils/stableDate';
 import {
   calcularResumenMes, gastoPorDia, mayoresDelMes,
@@ -67,6 +68,26 @@ export function MobileHomeView({
 
   const money = (n: number) => ocultar(formatCurrency(n, currency), oculto);
 
+  // Los calculos de esta pantalla --lo libre, el ritmo, lo mas grande del
+  // mes, el reparto por persona-- suman importes de toda la lista y necesitan
+  // una sola moneda para que sumar signifique algo. Antes recibian
+  // transactions/recurring tal cual llegan del servidor, con la moneda
+  // propia de cada fila cuando la trae (por ejemplo, tras corregir la moneda
+  // del hogar): un gasto de 50 dolares se sumaba como 50 a secas, mezclado
+  // con gastos en soles.
+  //
+  // Se proyecta UNA vez aqui arriba y se reparte a las tres secciones, igual
+  // que ya hace el Dashboard de escritorio con calculateDisponibleReal.
+  const fxRates = useFxRates();
+  const transactionsBase = useMemo(
+    () => projectToBase(transactions, fxRates),
+    [transactions, fxRates]
+  );
+  const recurringBase = useMemo(
+    () => projectRecurringToBase(recurring, fxRates),
+    [recurring, fxRates]
+  );
+
   return (
     <div className="cl-screen">
       <header className="cl-home-header">
@@ -108,8 +129,8 @@ export function MobileHomeView({
 
       {section === 'resumen' && (
         <Resumen
-          transactions={transactions}
-          recurring={recurring}
+          transactions={transactionsBase}
+          recurring={recurringBase}
           hoy={hoy}
           money={money}
           oculto={oculto}
@@ -118,10 +139,10 @@ export function MobileHomeView({
         />
       )}
       {section === 'fijos' && (
-        <Fijos recurring={recurring} money={money} onGoSubscriptions={onGoSubscriptions} />
+        <Fijos recurring={recurringBase} money={money} onGoSubscriptions={onGoSubscriptions} />
       )}
       {section === 'nosotros' && (
-        <Nosotros transactions={transactions} money={money} onAssignAuthors={onAssignAuthors} />
+        <Nosotros transactions={transactionsBase} money={money} onAssignAuthors={onAssignAuthors} />
       )}
 
       <div className="cl-kicker cl-section-kicker">Ver también</div>

@@ -4,6 +4,7 @@ import { getCategoriesByType } from '../utils/categoryHelpers';
 import { OWNER_OPTIONS } from '../utils/ownership';
 import { useOwnerLabels } from '../utils/ownerLabels';
 import { getMyOwnerRole } from '../utils/userIdentity';
+import { getMonedaBase } from '../utils/fx';
 import { toStableDateISO, toDateInputValue } from '../utils/stableDate';
 
 interface RecurringModalProps {
@@ -31,7 +32,7 @@ export const RecurringModal = ({ onClose, onSave, editingRecurring }: RecurringM
       setDescription(editingRecurring.description);
       setFrequency(editingRecurring.frequency);
       setNextDate(toDateInputValue(editingRecurring.nextDate));
-      setCurrency(editingRecurring.currency || 'PEN');
+      setCurrency(editingRecurring.currency || getMonedaBase());
       setOwner(editingRecurring.owner || getMyOwnerRole());
     } else {
       // Set default next date to today

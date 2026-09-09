@@ -4,6 +4,7 @@ import { Transaction, TransactionType, CurrencyType, Owner } from '../types';
 import { OWNER_OPTIONS } from '../utils/ownership';
 import { useOwnerLabels } from '../utils/ownerLabels';
 import { getMyOwnerRole } from '../utils/userIdentity';
+import { getMonedaBase } from '../utils/fx';
 import { getCategoriesByType, getCategoryById } from '../utils/categoryHelpers';
 import { normalizeDescription } from '../utils/descriptionNormalizer';
 import { extractReceiptData, ReceiptExtraction } from '../utils/receiptOCR';
@@ -32,7 +33,7 @@ export const TransactionModal = ({
   const [category, setCategory]   = useState(editingTransaction?.category || '');
   const [description, setDescription] = useState(editingTransaction?.description || '');
   const [date, setDate]           = useState(editingTransaction?.date || new Date().toISOString().split('T')[0]);
-  const [currency, setCurrency]   = useState<CurrencyType>(editingTransaction?.currency || 'PEN');
+  const [currency, setCurrency]   = useState<CurrencyType>(editingTransaction?.currency || getMonedaBase() as CurrencyType);
   const [receiptImageUrl, setReceiptImageUrl] = useState<string | undefined>(editingTransaction?.receiptImageUrl);
   const [owner, setOwner]         = useState<Owner>(editingTransaction?.owner || getMyOwnerRole());
   const ownerLabels               = useOwnerLabels();
@@ -110,7 +111,7 @@ export const TransactionModal = ({
       setCategory(editingTransaction.category);
       setDescription(editingTransaction.description);
       setDate(editingTransaction.date);
-      setCurrency(editingTransaction.currency || 'PEN');
+      setCurrency(editingTransaction.currency || getMonedaBase() as CurrencyType);
       setReceiptImageUrl(editingTransaction.receiptImageUrl);
       setOwner(editingTransaction.owner || getMyOwnerRole());
     }

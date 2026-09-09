@@ -2,6 +2,7 @@ import { useState, FormEvent, useEffect } from 'react';
 import { SavingsGoal, CurrencyType, Owner } from '../types';
 import { OWNER_OPTIONS } from '../utils/ownership';
 import { useOwnerLabels } from '../utils/ownerLabels';
+import { getMonedaBase } from '../utils/fx';
 
 interface GoalModalProps {
   onClose: () => void;
@@ -50,7 +51,7 @@ export const GoalModal = ({ onClose, onSave, editingGoal }: GoalModalProps) => {
       setDescription(editingGoal.description || '');
       setIcon(editingGoal.icon);
       setColor(editingGoal.color);
-      setCurrency(editingGoal.currency || 'PEN');
+      setCurrency(editingGoal.currency || getMonedaBase());
       setOwner(editingGoal.owner || 'shared');
     } else {
       // Para nueva meta, establecer fecha de inicio como hoy

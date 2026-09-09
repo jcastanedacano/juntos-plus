@@ -1,6 +1,7 @@
 import { Transaction } from '../../types';
 import { getCategoryById } from '../../utils/categoryHelpers';
 import { formatCurrency } from '../../utils/calculations';
+import { getMonedaBase } from '../../utils/fx';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { X, Copy, RefreshCw, Trash2, Receipt } from 'lucide-react';
@@ -67,7 +68,7 @@ export function TransactionDrawer({ transaction, open, onClose, onEdit, onDelete
           {/* Amount hero */}
           <div className={`txn-drawer-amount ${transaction.type === 'income' ? 'txn-amount-positive' : 'txn-amount-negative'}`}>
             {transaction.type === 'income' ? '+' : '-'}
-            {formatCurrency(transaction.amount, transaction.currency || 'PEN')}
+            {formatCurrency(transaction.amount, transaction.currency || getMonedaBase())}
           </div>
 
           {/* Category */}

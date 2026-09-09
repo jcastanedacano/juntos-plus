@@ -72,3 +72,52 @@ export function aPen(rel: FxRates): FxRates {
   const relPen = rel.PEN > 0 ? rel.PEN : 1;
   return { PEN: 1, USD: rel.USD / relPen, EUR: rel.EUR / relPen };
 }
+
+/**
+ * El nucleo de convertir UN importe a la base: dada su moneda propia (o su
+ * ausencia, que significa «ya esta en la base») y las tasas YA relativas a esa
+ * base, el importe convertido.
+ *
+ * Vive aqui, sin estado, para poder probarlo sin arrastrar MSAL detras: fx.ts
+ * importa auth/getToken.ts, que revienta fuera de un navegador real.
+ */
+export function convertirImporte(amount: number, currency: string | undefined, base: string, rates: FxRates): number {
+  const c = currency || base;
+  const rate = (rates as unknown as Record<string, number>)[c];
+  return amount * (rate || 1);
+}
+
+/**
+ * Proyecta una lista de items con `amount` y `currency` propios a la base:
+ * misma forma, importe convertido, moneda puesta a la base. Transacciones,
+ * recurrentes y presupuestos comparten esa forma, asi que la comparten aqui.
+ *
+ * Un item sin moneda ya esta en la base: no se toca ni se copia, para no
+ * generar objetos nuevos en cada render de algo que no cambio.
+ */
+export function proyectarABase<T extends { amount: number; currency?: string }>(
+  items: T[], base: string, rates: FxRates,
+): T[] {
+  return items.map(item => {
+    if (!item.currency || item.currency === base) return item;
+    return { ...item, amount: convertirImporte(item.amount, item.currency, base, rates), currency: base } as T;
+  });
+}
+
+/**
+ * Igual que proyectarABase, pero para metas: llevan DOS importes propios
+ * --targetAmount y currentAmount-- en vez de uno solo.
+ */
+export function proyectarMetaABase<T extends { targetAmount: number; currentAmount: number; currency?: string }>(
+  items: T[], base: string, rates: FxRates,
+): T[] {
+  return items.map(item => {
+    if (!item.currency || item.currency === base) return item;
+    return {
+      ...item,
+      targetAmount: convertirImporte(item.targetAmount, item.currency, base, rates),
+      currentAmount: convertirImporte(item.currentAmount, item.currency, base, rates),
+      currency: base,
+    } as T;
+  });
+}

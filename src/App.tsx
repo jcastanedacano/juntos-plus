@@ -170,7 +170,7 @@ function App() {
 
   // Owner labels (couple-finance) settings modal
   // false = cerrado; 'pareja' | 'cambio' = abierto en esa seccion.
-  const [showOwnerLabels, setShowOwnerLabels] = useState<false | 'pareja' | 'cambio'>(false);
+  const [showOwnerLabels, setShowOwnerLabels] = useState<false | 'pareja' | 'cambio' | 'moneda'>(false);
 
   // Toast
   const { addToast } = useToast();

@@ -7,7 +7,7 @@ interface MobileSettingsViewProps {
   onExport?: () => void;
   onOpenSettings?: () => void;
   onOpenNotifications?: () => void;
-  onOpenOwnerLabels?: (foco?: 'pareja' | 'cambio') => void;
+  onOpenOwnerLabels?: (foco?: 'pareja' | 'cambio' | 'moneda') => void;
   /** Correo de la sesion del servidor, cuando se entro por Google. */
   correoSesion?: string | null;
 }
@@ -65,6 +65,7 @@ export function MobileSettingsView({
         // vez, asi que se separan y cada una abre el modal en su seccion.
         ...(onOpenOwnerLabels ? [
           { label: 'Nombres de la pareja', run: () => onOpenOwnerLabels('pareja') },
+          { label: 'Moneda del hogar', run: () => onOpenOwnerLabels('moneda') },
           { label: 'Tipo de cambio', run: () => onOpenOwnerLabels('cambio') },
         ] : []),
         ...(onOpenSettings ? [{ label: 'Categorías', run: onOpenSettings }] : []),

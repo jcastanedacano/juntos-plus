@@ -393,3 +393,87 @@ describe('la pareja nombrada ya es de la casa', () => {
     expect((await s.invitar(ana, 'me@zumyalvarez.com')).error).toBe('sin_cuenta');
   });
 });
+
+describe('cambiar la moneda del hogar', () => {
+  it('marca con la moneda vieja lo que no tenia moneda propia', async () => {
+    const s = cargarServidor(dir);
+    const id = await s.crearHogar(ana, 'Casa de Ana', 'PEN');
+    fs.writeFileSync(s.archivoDeHogar(id), JSON.stringify({
+      currency: 'PEN',
+      transactions: [
+        { id: 't1', amount: 100 },              // sin moneda: es soles, implicito
+        { id: 't2', amount: 50, currency: 'USD' }, // ya tenia la suya: no se toca
+      ],
+      budgets: [{ id: 'b1', amount: 10 }],
+      goals: [{ id: 'g1', targetAmount: 5 }],
+      recurring: [{ id: 'r1', amount: 20 }],
+      accounts: [], investments: [], autosave: [], users: [], dismissedSubscriptions: [],
+    }));
+
+    const r = await s.cambiarMonedaHogar(id, 'EUR');
+    expect(r.error).toBeUndefined();
+    expect(r.moneda).toBe('EUR');
+    expect(r.marcados).toBe(4); // t1, b1, g1, r1 -- no t2, que ya era USD
+
+    const datos = JSON.parse(fs.readFileSync(s.archivoDeHogar(id), 'utf8'));
+    expect(datos.currency).toBe('EUR');
+    expect(datos.transactions[0].currency).toBe('PEN'); // sellado con la vieja
+    expect(datos.transactions[1].currency).toBe('USD'); // intacto
+    expect(datos.budgets[0].currency).toBe('PEN');
+    expect(datos.goals[0].currency).toBe('PEN');
+    expect(datos.recurring[0].currency).toBe('PEN');
+  });
+
+  it('una moneda que no existe se rechaza sin tocar el archivo', async () => {
+    const s = cargarServidor(dir);
+    const id = await s.crearHogar(ana, 'Casa de Ana', 'PEN');
+    const antes = fs.readFileSync(s.archivoDeHogar(id), 'utf8');
+
+    const r = await s.cambiarMonedaHogar(id, 'BTC');
+    expect(r.error).toBe('moneda_invalida');
+    expect(fs.readFileSync(s.archivoDeHogar(id), 'utf8')).toBe(antes);
+  });
+
+  it('pedir la misma moneda no hace nada', async () => {
+    const s = cargarServidor(dir);
+    const id = await s.crearHogar(ana, 'Casa de Ana', 'EUR');
+    const r = await s.cambiarMonedaHogar(id, 'EUR');
+    expect(r.error).toBeUndefined();
+    expect(r.cambio).toBe(false);
+    expect(r.marcados).toBe(0);
+  });
+
+  it('acepta minusculas, igual que crear el hogar', async () => {
+    const s = cargarServidor(dir);
+    const id = await s.crearHogar(ana, 'Casa de Ana', 'PEN');
+    const r = await s.cambiarMonedaHogar(id, 'usd');
+    expect(r.moneda).toBe('USD');
+  });
+
+  it('un hogar que no existe no revienta, devuelve un error', async () => {
+    const s = cargarServidor(dir);
+    const r = await s.cambiarMonedaHogar('h_no_existe', 'EUR');
+    expect(r.error).toBe('hogar_ilegible');
+  });
+
+  // Cuentas e inversiones no tienen campo de moneda: quedan con su numero tal
+  // cual, leidas bajo el simbolo nuevo. Es la limitacion conocida, y este test
+  // fija que el cambio no intenta tocarlas ni falla por su ausencia.
+  it('cuentas e inversiones se quedan igual, sin campo de moneda', async () => {
+    const s = cargarServidor(dir);
+    const id = await s.crearHogar(ana, 'Casa de Ana', 'PEN');
+    fs.writeFileSync(s.archivoDeHogar(id), JSON.stringify({
+      currency: 'PEN',
+      transactions: [], budgets: [], goals: [], recurring: [],
+      accounts: [{ id: 'a1', balance: 500 }],
+      investments: [{ id: 'i1', currentAmount: 1000 }],
+      autosave: [], users: [], dismissedSubscriptions: [],
+    }));
+
+    const r = await s.cambiarMonedaHogar(id, 'EUR');
+    expect(r.error).toBeUndefined();
+    const datos = JSON.parse(fs.readFileSync(s.archivoDeHogar(id), 'utf8'));
+    expect(datos.accounts[0]).toEqual({ id: 'a1', balance: 500 });
+    expect(datos.investments[0]).toEqual({ id: 'i1', currentAmount: 1000 });
+  });
+});

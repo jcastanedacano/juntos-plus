@@ -98,6 +98,32 @@ export const invitarAlHogar = (correo: string) => accion('/hogar/invitacion', { 
 export const aceptarInvitacion = (hogarId: string) => accion('/hogar/invitacion/aceptar', { hogarId });
 export const rechazarInvitacion = (hogarId: string) => accion('/hogar/invitacion/rechazar', { hogarId });
 
+export interface ResultadoMoneda {
+  ok: true;
+  moneda: string;
+  /** Cuántos registros sin moneda propia quedaron marcados con la vieja. */
+  marcados: number;
+}
+
+/**
+ * Cambia la moneda del hogar. No convierte ningún importe: los registros sin
+ * moneda propia quedan marcados con la vieja antes del cambio, y el resto de
+ * la aplicación ya sabe mostrar y sumar varias monedas a la vez.
+ */
+export async function cambiarMonedaHogar(moneda: string): Promise<ResultadoMoneda | { ok: false; codigo: string }> {
+  try {
+    const r = await pedir('/hogar/moneda', { method: 'POST', body: JSON.stringify({ moneda }) });
+    if (!r.ok) {
+      const datos = await r.json().catch(() => ({}));
+      return { ok: false, codigo: datos.codigo || `http_${r.status}` };
+    }
+    const datos = await r.json();
+    return { ok: true, moneda: datos.moneda, marcados: datos.marcados };
+  } catch {
+    return { ok: false, codigo: 'sin_red' };
+  }
+}
+
 /**
  * El texto que ve el usuario para cada código. Vive aquí y no en cada pantalla
  * para que el mismo problema se explique siempre igual, y porque un código
@@ -120,6 +146,9 @@ const MOTIVOS: Record<string, string> = {
   http_403: 'Tu cuenta no tiene acceso.',
   http_400: 'El servidor rechazó la petición.',
   http_500: 'Error del servidor. Inténtalo de nuevo en un momento.',
+  moneda_invalida: 'Esa moneda no está disponible.',
+  hogar_ilegible: 'No se pudieron leer los datos del hogar. No se cambió nada.',
+  no_verificado: 'No se pudo confirmar el cambio, así que no se tocó nada. Inténtalo de nuevo.',
 };
 
 /**

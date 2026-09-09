@@ -82,6 +82,14 @@ export default defineConfig({
             handler: 'NetworkOnly',
           },
         ],
+        // El SW de generateSW pone un navigateFallback por defecto: CUALQUIER
+        // navegacion de pagina que no este en la precache se responde con el
+        // index.html cacheado, sin tocar la red. Eso rompe /auth/google y
+        // /auth/google/callback, que son navegaciones completas de verdad
+        // (window.location.href, no un fetch): el boton de Google pulsaba,
+        // el SW devolvia la app de vuelta con 200, y nunca salia hacia Google.
+        // "Vuelve a la pantalla inicial y no avanza" era exactamente esto.
+        navigateFallbackDenylist: [/^\/auth\//, /^\/api\//],
       },
       manifest: {
         name: 'Juntos+1 Finance Tracker',

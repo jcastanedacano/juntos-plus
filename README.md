@@ -45,6 +45,7 @@ no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 | **Tarjeta de crédito** | Utilización, fecha límite, ciclo, TEA, simulador de pago, estrategia de cuotas y proyección al cierre. Lee el PDF del estado de cuenta del BCP en el navegador, sin subirlo a ningún sitio. |
 | **Importar del banco** | Un registro de parsers, no un formato único. Cada banco implementa `detect` y `parse`, y el archivo se enruta solo al que lo reconoce. Vienen cuatro: BCP/Yape, Interbank, BBVA y Scotiabank. Lo que no encaja queda registrado con sus cabeceras para poder añadirlo. |
 | **Hogares** | Los datos pertenecen a un hogar, no a una cuenta: sus dos personas ven exactamente lo mismo. Quien llega nuevo estrena el suyo, vacío, elige la moneda en la que lleva las cuentas, y para compartirlo llama a la otra persona por su correo. Al aceptar, lo que cada quien había apuntado por separado se une. |
+| **Independencia financiera** | En Patrimonio: cuánto hace falta para que lo que rinde cubra lo que gastas (gasto mensual medio × 12 ÷ tasa, por defecto la regla del 4%). Promedia los últimos meses completos con gastos, no da cifra con menos de tres, y muestra el avance con todo el patrimonio y sin contar los inmuebles. |
 
 **Además:** presupuestos, metas de ahorro, patrimonio neto, recap anual,
 notificaciones push con un resumen diario y tipo de cambio en vivo.
@@ -95,6 +96,11 @@ de redirección que hay que registrar en Google Cloud es
 los datos que ya existían antes del reparto por hogares. Sin esa lista nadie los
 hereda, ni siquiera sus dueños: falla cerrada a propósito, porque la
 alternativa es que los reclame quien llegue primero.
+
+**El orden importa.** El primero de la lista es «yo» y el segundo es «pareja»,
+igual en los dos dispositivos: de ahí sale a nombre de quién se apunta cada
+gasto por defecto. En un hogar que se estrena desde la aplicación no hace falta
+configurar nada: «yo» es quien lo creó.
 
 ```bash
 npm run dev     # frontend en http://localhost:3008

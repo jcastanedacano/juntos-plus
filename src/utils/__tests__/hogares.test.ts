@@ -477,3 +477,136 @@ describe('cambiar la moneda del hogar', () => {
     expect(datos.investments[0]).toEqual({ id: 'i1', currentAmount: 1000 });
   });
 });
+
+// «Yo» y «pareja» son roles del HOGAR: los decide el servidor una vez y valen
+// igual en los dos dispositivos. Antes los decidia cada navegador con su
+// localStorage, y en el movil de la pareja «yo» seguia siendo el otro.
+describe('quien es yo y quien es pareja', () => {
+  it('quien estrena el hogar es «yo»', async () => {
+    const s = cargarServidor(dir);
+    const casa = await s.crearHogar(ana, 'Casa de Ana');
+    const mapa = await s.leerHogares();
+    expect(s.rolDe(mapa, casa, ana.user)).toBe('me');
+  });
+
+  it('quien llega por invitacion es «pareja», y el anfitrion sigue siendo «yo»', async () => {
+    const s = cargarServidor(dir);
+    const casa = await s.crearHogar(ana, 'Casa de Ana');
+    await s.crearHogar(beto, 'Casa de Beto');
+    await s.invitar(ana, 'beto@gmail.com');
+    await s.aceptarInvitacion(beto, casa);
+
+    const mapa = await s.leerHogares();
+    expect(s.rolDe(mapa, casa, ana.user)).toBe('me');
+    expect(s.rolDe(mapa, casa, beto.user)).toBe('partner');
+  });
+
+  it('no depende de quien mire ni del orden en que entraron al directorio', async () => {
+    const s = cargarServidor(dir);
+    // Beto entra al directorio ANTES que Ana, pero Ana es quien crea la casa.
+    await s.crearHogar(beto, 'Casa de Beto');
+    const casa = await s.crearHogar(ana, 'Casa de Ana');
+    await s.invitar(ana, 'beto@gmail.com');
+    await s.aceptarInvitacion(beto, casa);
+
+    const mapa = await s.leerHogares();
+    expect(s.rolDe(mapa, casa, ana.user)).toBe('me');
+    expect(s.rolDe(mapa, casa, beto.user)).toBe('partner');
+  });
+
+  it('un hogar de antes de guardar el creador lo aprende al aceptar la invitacion', async () => {
+    const s = cargarServidor(dir);
+    const casa = await s.crearHogar(ana, 'Casa de Ana');
+    await s.crearHogar(beto, 'Casa de Beto');
+    // Se simula un hogar antiguo: sin el campo `creador`.
+    const antes = await s.leerHogares();
+    delete antes.hogares[casa].creador;
+    await s.guardarHogares(antes);
+
+    await s.invitar(ana, 'beto@gmail.com');
+    await s.aceptarInvitacion(beto, casa);
+
+    const mapa = await s.leerHogares();
+    expect(mapa.hogares[casa].creador).toBe('ana-oid');
+    expect(s.rolDe(mapa, casa, ana.user)).toBe('me');
+    expect(s.rolDe(mapa, casa, beto.user)).toBe('partner');
+  });
+
+  it('un hogar antiguo con un solo miembro: ese miembro es «yo»', async () => {
+    const s = cargarServidor(dir);
+    const casa = await s.crearHogar(ana, 'Casa de Ana');
+    const mapa = await s.leerHogares();
+    delete mapa.hogares[casa].creador;
+    expect(s.rolDe(mapa, casa, ana.user)).toBe('me');
+  });
+
+  it('en el hogar migrado manda el orden de la lista: el primero es «yo»', async () => {
+    fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(datosDeEjemplo));
+    const s = cargarServidor(dir, 'jorge@ejemplo.com,zumy@ejemplo.com');
+    await s.migrarAHogares();
+    const mapa = await s.leerHogares();
+
+    const jorge = { oid: 'jorge-oid', email: 'jorge@ejemplo.com' };
+    const zumy = { oid: 'zumy-oid', email: 'zumy@ejemplo.com' };
+    expect(s.rolDe(mapa, 'principal', jorge)).toBe('me');
+    expect(s.rolDe(mapa, 'principal', zumy)).toBe('partner');
+  });
+
+  it('en el hogar migrado tambien vale nombrarlos por identificador', async () => {
+    fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(datosDeEjemplo));
+    const s = cargarServidor(dir, 'jorge-oid,zumy-oid');
+    await s.migrarAHogares();
+    const mapa = await s.leerHogares();
+
+    expect(s.rolDe(mapa, 'principal', { oid: 'jorge-oid' })).toBe('me');
+    expect(s.rolDe(mapa, 'principal', { oid: 'zumy-oid' })).toBe('partner');
+  });
+
+  it('en el hogar migrado, quien entra fuera de la lista es «pareja»', async () => {
+    fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(datosDeEjemplo));
+    const s = cargarServidor(dir, 'jorge@ejemplo.com');
+    await s.migrarAHogares();
+    const mapa = await s.leerHogares();
+
+    expect(s.rolDe(mapa, 'principal', { oid: 'otro-oid', email: 'otro@ejemplo.com' })).toBe('partner');
+  });
+
+  it('sin identidad o sin hogar no hay rol que dar', async () => {
+    const s = cargarServidor(dir);
+    const casa = await s.crearHogar(ana, 'Casa de Ana');
+    const mapa = await s.leerHogares();
+    expect(s.rolDe(mapa, casa, {})).toBeNull();
+    expect(s.rolDe(mapa, 'h_no_existe', ana.user)).toBeNull();
+  });
+});
+
+describe('los ajustes del hogar', () => {
+  it('un hogar nuevo nace con un objeto de ajustes vacio', async () => {
+    const s = cargarServidor(dir);
+    const casa = await s.crearHogar(ana, 'Casa de Ana');
+    const datos = JSON.parse(fs.readFileSync(s.archivoDeHogar(casa), 'utf8'));
+    expect(datos.hogarConfig).toEqual({});
+  });
+
+  // Cada uno guarda lo suyo desde su dispositivo. Con «gana el ultimo», el
+  // guardado de la tasa de retiro borraria la mesada que la otra acaba de poner.
+  it('guardar una clave no borra las demas', () => {
+    const s = cargarServidor(dir);
+    const r = s.fusionarAjustes({ mesada: { me: 200 } }, { independencia: { tasa: 0.03 } });
+    expect(r).toEqual({ mesada: { me: 200 }, independencia: { tasa: 0.03 } });
+  });
+
+  it('una clave repetida la pisa lo nuevo', () => {
+    const s = cargarServidor(dir);
+    const r = s.fusionarAjustes({ independencia: { tasa: 0.04 } }, { independencia: { tasa: 0.03 } });
+    expect(r.independencia.tasa).toBe(0.03);
+  });
+
+  it('lo que no es un objeto plano no toca nada ni revienta', () => {
+    const s = cargarServidor(dir);
+    expect(s.fusionarAjustes({ a: 1 }, null)).toEqual({ a: 1 });
+    expect(s.fusionarAjustes({ a: 1 }, [1, 2])).toEqual({ a: 1 });
+    expect(s.fusionarAjustes(undefined, { b: 2 })).toEqual({ b: 2 });
+    expect(s.fusionarAjustes('roto', 'roto')).toEqual({});
+  });
+});

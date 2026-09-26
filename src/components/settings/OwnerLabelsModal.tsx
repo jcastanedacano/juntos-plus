@@ -2,7 +2,7 @@ import { useState, FormEvent, useEffect } from 'react';
 import { X, RotateCcw, Send, Check } from 'lucide-react';
 import { DEFAULT_OWNER_LABELS, getOwnerLabels, setOwnerLabels } from '../../utils/ownerLabels';
 import { DEFAULT_FX_RATES, getFxRates, setFxRates, getFxMeta, clearFxOverride, getMonedaBase, simboloDe, relativas } from '../../utils/fx';
-import { getCurrentUserEmail, setUserEmailMap } from '../../utils/userIdentity';
+import { getCurrentUserEmail } from '../../utils/userIdentity';
 import { consultarHogar, invitarAlHogar, cambiarMonedaHogar, explicar, EstadoHogar, MONEDAS } from '../../utils/hogar';
 
 interface OwnerLabelsModalProps {
@@ -49,11 +49,10 @@ export function OwnerLabelsModal({ onClose , foco}: OwnerLabelsModalProps) {
     let vigente = true;
     consultarHogar().then(e => {
       if (!vigente) return;
+      // Antes aqui se deducia el correo de la pareja y se guardaba en este
+      // navegador, y en el dispositivo de ella eso la volvia «yo». Ahora el
+      // rol viene del servidor con cada consulta (ver rolPropio.ts).
       setHogar(e);
-      // El correo de la pareja deja de escribirse a mano: se deduce de quien
-      // comparte el hogar. Es lo que reparte los gastos por persona.
-      const otro = e.miembros.find(c => c && c !== e.correo);
-      if (otro) setUserEmailMap({ partner: otro });
     });
     return () => { vigente = false; };
   }, []);

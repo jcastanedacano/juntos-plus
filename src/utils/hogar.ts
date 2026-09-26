@@ -1,5 +1,6 @@
 import { tokenOpcional } from '../auth/getToken';
 import { getAPIUrl } from './storageAPI';
+import { fijarRolDelServidor, RolDelHogar } from './rolPropio';
 
 /**
  * El hogar es el dueño de los datos: uno o dos miembros que ven exactamente lo
@@ -28,6 +29,8 @@ export interface EstadoHogar {
   hogarId: string | null;
   correo: string | null;
   nombre: string | null;
+  /** Si soy «yo» o la «pareja» en este hogar; lo decide el servidor, no el navegador. */
+  rol: RolDelHogar | null;
   /** Correos de quienes comparten el hogar. */
   miembros: string[];
   /** Invitaciones que este hogar envió y siguen sin contestar. */
@@ -37,7 +40,7 @@ export interface EstadoHogar {
 }
 
 const ANONIMO: EstadoHogar = {
-  autenticado: false, problema: false, hogarId: null, correo: null, nombre: null,
+  autenticado: false, problema: false, hogarId: null, correo: null, nombre: null, rol: null,
   miembros: [], enviadas: [], invitaciones: [],
 };
 
@@ -65,7 +68,11 @@ export async function consultarHogar(): Promise<EstadoHogar> {
     // del servidor: ni login ni alta, un aviso de que vuelva a intentarlo.
     if (r.status === 401 || r.status === 403) return ANONIMO;
     if (!r.ok) return { ...ANONIMO, autenticado: true, problema: true };
-    return { ...ANONIMO, autenticado: true, ...(await r.json()) };
+    const estado = { ...ANONIMO, autenticado: true, ...(await r.json()) } as EstadoHogar;
+    // Cada consulta refresca el rol: es lo que hace que «yo» sea el mismo en
+    // los dos dispositivos, sin que ninguno lo guarde por su cuenta.
+    fijarRolDelServidor(estado.rol);
+    return estado;
   } catch {
     // Sin red ni servidor. Tampoco es «no tienes hogar».
     return { ...ANONIMO, autenticado: true, problema: true };

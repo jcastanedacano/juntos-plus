@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { Transaction, SavingsGoal, Statistics, Account, RecurringTransaction, Budget } from '../types';
+import { Transaction, SavingsGoal, Statistics, Account, RecurringTransaction, Budget, HogarConfig } from '../types';
 import { useFxRates, projectToBase, projectRecurringToBase, projectBudgetsToBase, projectGoalsToBase } from '../utils/fx';
 import {
   MonthlyPlan,
@@ -20,6 +20,7 @@ import { Rule503020Card } from './dashboard/Rule503020Card';
 import { HeroCard } from './dashboard/HeroCard';
 import { InsightsRow } from './dashboard/InsightsRow';
 import { OwnershipSplitCard } from './dashboard/OwnershipSplitCard';
+import { MesadaCard } from './dashboard/MesadaCard';
 import { GoalsStrip } from './dashboard/GoalsStrip';
 import { RecentTransactionsCard } from './dashboard/RecentTransactionsCard';
 import { WalletSection } from './WalletSection';
@@ -35,6 +36,8 @@ interface DashboardProps {
   recurring?: RecurringTransaction[];
   selectedMonth?: Date;
   budgets?: Budget[];
+  hogarConfig?: HogarConfig;
+  onSaveHogarConfig?: (parcial: HogarConfig) => void;
   onRefresh?: () => void;
   onAddAccount?: () => void;
   onEditAccount?: (account: Account) => void;
@@ -55,6 +58,8 @@ export function Dashboard({
   recurring = [],
   selectedMonth,
   budgets = [],
+  hogarConfig = {},
+  onSaveHogarConfig,
   onRefresh,
   onAddAccount,
   onEditAccount,
@@ -210,6 +215,19 @@ export function Dashboard({
           selectedMonth={selectedMonth}
         />
       </div>
+
+      {/* ═══ Row 3.6: Mesada de cada persona ═══ */}
+      {onSaveHogarConfig && (
+        <div className="dash-col-12">
+          <MesadaCard
+            transacciones={txnsBase}
+            config={hogarConfig}
+            moneda={currency}
+            mes={selectedMonth}
+            onGuardar={onSaveHogarConfig}
+          />
+        </div>
+      )}
 
       {/* ═══ Row 4: Insights (full width, actionable) ═══ */}
       <div className="dash-col-12">

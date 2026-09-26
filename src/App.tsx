@@ -1265,6 +1265,8 @@ function App() {
           onAssignAuthors={() => setCurrentView('transactions')}
           onNavigate={setCurrentView}
           onImport={handleImportBcpPdf}
+          hogarConfig={hogarConfig}
+          onSaveHogarConfig={handleSaveHogarConfig}
         />
       )}
 
@@ -1276,6 +1278,8 @@ function App() {
           goals={goalsView}
           accounts={accounts}
           currency={currency}
+          hogarConfig={hogarConfig}
+          onSaveHogarConfig={handleSaveHogarConfig}
           monthlyPlan={monthlyPlan}
           recurring={recurring}
           selectedMonth={selectedMonth}

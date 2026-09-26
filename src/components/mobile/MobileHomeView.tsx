@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { RecurringTransaction, Transaction } from '../../types';
+import { RecurringTransaction, Transaction, HogarConfig } from '../../types';
+import { MesadaCard } from '../dashboard/MesadaCard';
 import { formatCurrency } from '../../utils/calculations';
 import { useFxRates, projectToBase, projectRecurringToBase } from '../../utils/fx';
 import { parseDateOnly } from '../../utils/stableDate';
@@ -26,6 +27,8 @@ interface MobileHomeViewProps {
   onAssignAuthors: () => void;
   onNavigate: (v: ViewType) => void;
   onImport?: () => void;
+  hogarConfig?: HogarConfig;
+  onSaveHogarConfig?: (parcial: HogarConfig) => void;
 }
 
 /**
@@ -60,6 +63,7 @@ const SECCIONES: { id: HomeSection; label: string }[] = [
 export function MobileHomeView({
   transactions, recurring, currency, section, onSectionChange,
   onGoSubscriptions, onAssignAuthors, onNavigate, onImport,
+  hogarConfig = {}, onSaveHogarConfig,
 }: MobileHomeViewProps) {
   // El handoff pide explicitamente que esto NO se persista: al reabrir la app
   // las cifras se ven.
@@ -142,7 +146,19 @@ export function MobileHomeView({
         <Fijos recurring={recurringBase} money={money} onGoSubscriptions={onGoSubscriptions} />
       )}
       {section === 'nosotros' && (
-        <Nosotros transactions={transactionsBase} money={money} onAssignAuthors={onAssignAuthors} />
+        <>
+          <Nosotros transactions={transactionsBase} money={money} onAssignAuthors={onAssignAuthors} />
+          {onSaveHogarConfig && (
+            <MesadaCard
+              variante="movil"
+              transacciones={transactionsBase}
+              config={hogarConfig}
+              moneda={currency}
+              formato={money}
+              onGuardar={onSaveHogarConfig}
+            />
+          )}
+        </>
       )}
 
       <div className="cl-kicker cl-section-kicker">Ver también</div>

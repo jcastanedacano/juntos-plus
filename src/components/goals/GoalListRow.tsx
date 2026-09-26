@@ -3,6 +3,7 @@ import { SavingsGoal } from '../../types';
 import { formatCurrency } from '../../utils/calculations';
 import { getGoalProgress, getDaysRemaining, getGoalStatusLabel, isGoalCompleted, getRemainingAmount, getRequiredContribution } from '../../utils/goalCalculations';
 import { Pause, Play } from 'lucide-react';
+import { EmergenciaChip } from './EmergenciaChip';
 
 interface GoalListRowProps {
   goal: SavingsGoal;
@@ -42,6 +43,7 @@ export const GoalListRow = memo(({
       <div className="gl-list-info">
         <span className="gl-list-name">{goal.name}</span>
         <span className="gl-list-status" style={{ color: status.color }}>{status.text}</span>
+        <EmergenciaChip goal={goal} />
       </div>
 
       <div className="gl-list-progress-col">

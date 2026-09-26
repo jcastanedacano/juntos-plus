@@ -199,6 +199,14 @@ export interface Investment {
 export interface HogarConfig {
   /** Regla de retiro para el numero de independencia financiera (0.04 = 4%). */
   independencia?: { tasa: number };
+  /**
+   * Mesada mensual de cada persona, en la moneda del hogar. Van como dos
+   * claves sueltas y no como un objeto: el servidor fusiona por clave de
+   * primer nivel, y con un objeto lo que guarda una persona borraria lo de la
+   * otra.
+   */
+  mesadaMe?: number;
+  mesadaPartner?: number;
 }
 
 export interface RecurringPriceEntry {

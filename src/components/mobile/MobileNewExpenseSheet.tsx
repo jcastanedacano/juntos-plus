@@ -42,6 +42,10 @@ export function MobileNewExpenseSheet({ onClose, onSave, onMoreOptions }: Mobile
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('food');
   const [paidBy, setPaidBy] = useState<PaidBy>('me');
+  // Un gasto personal es de quien lo paga: sale de SU mesada, no de la casa.
+  // Sin esto la hoja movil solo sabia quien pago, y ningun gasto apuntado desde
+  // el telefono podia descontarse de una mesada.
+  const [personal, setPersonal] = useState(false);
   const hoy = useMemo(() => new Date(), []);
 
   const pulsar = (tecla: string) => {
@@ -81,6 +85,8 @@ export function MobileNewExpenseSheet({ onClose, onSave, onMoreOptions }: Mobile
       date: toStableDateISO(format(hoy, 'yyyy-MM-dd')),
       accountId: 'default',
       paidBy,
+      // Si lo pagan los dos no es de nadie en particular: sigue siendo de la casa.
+      ...(personal && paidBy !== 'both' ? { owner: paidBy } : {}),
     } as Omit<Transaction, 'id'>);
   };
 
@@ -142,6 +148,22 @@ export function MobileNewExpenseSheet({ onClose, onSave, onMoreOptions }: Mobile
             ))}
           </div>
           <div className="cl-meta" style={{ marginTop: 8 }}>{resumenPago}</div>
+          {paidBy !== 'both' && (
+            <div style={{ marginTop: 10 }}>
+              <button
+                className="cl-chip"
+                aria-pressed={personal}
+                onClick={() => setPersonal(v => !v)}
+              >
+                Gasto personal
+              </button>
+              <span className="cl-meta" style={{ marginLeft: 8 }}>
+                {personal
+                  ? `Sale de la mesada de ${paidBy === 'me' ? labels.me : labels.partner}`
+                  : 'Es de la casa'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* El fondo de la rejilla se ve por los huecos de 1px y dibuja las

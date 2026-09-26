@@ -105,6 +105,24 @@ export function proyectarABase<T extends { amount: number; currency?: string }>(
 }
 
 /**
+ * Igual que proyectarABase, para deudas: llevan DOS importes propios --el
+ * saldo y la cuota-- y ninguno se llama `amount`.
+ */
+export function proyectarDeudaABase<T extends { balance: number; monthlyPayment: number; currency?: string }>(
+  items: T[], base: string, rates: FxRates,
+): T[] {
+  return items.map(item => {
+    if (!item.currency || item.currency === base) return item;
+    return {
+      ...item,
+      balance: convertirImporte(item.balance, item.currency, base, rates),
+      monthlyPayment: convertirImporte(item.monthlyPayment, item.currency, base, rates),
+      currency: base,
+    } as T;
+  });
+}
+
+/**
  * Igual que proyectarABase, pero para metas: llevan DOS importes propios
  * --targetAmount y currentAmount-- en vez de uno solo.
  */

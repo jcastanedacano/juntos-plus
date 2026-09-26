@@ -1,4 +1,4 @@
-import { Transaction, Account, Budget, User, SavingsGoal, Investment, RecurringTransaction, AutoSave, HogarConfig } from '../types';
+import { Transaction, Account, Budget, User, SavingsGoal, Investment, RecurringTransaction, AutoSave, HogarConfig, Debt } from '../types';
 import { tokenOpcional } from '../auth/getToken';
 
 const API_URL = 'http://localhost:3007/api';
@@ -37,6 +37,8 @@ interface AppData {
   dismissedSubscriptions: string[];
   /** Ajustes del hogar; ausente en hogares anteriores a este campo. */
   hogarConfig?: HogarConfig;
+  /** Deudas que no son la tarjeta; ausente en hogares anteriores a este campo. */
+  debts?: Debt[];
 }
 
 let cachedData: AppData | null = null;
@@ -101,6 +103,7 @@ const fetchAllData = async (): Promise<AppData> => {
         autosave: [],
         dismissedSubscriptions: [],
         hogarConfig: {},
+        debts: [],
       };
     } finally {
       pendingFetch = null;
@@ -233,6 +236,15 @@ export const storageAPI = {
 
   saveDismissedSubscriptions: async (ids: string[]): Promise<void> => {
     await saveToServer('dismissedSubscriptions', ids);
+  },
+
+  getDebts: async (): Promise<Debt[]> => {
+    const data = await fetchAllData();
+    return data.debts || [];
+  },
+
+  saveDebts: async (debts: Debt[]): Promise<void> => {
+    await saveToServer('debts', debts);
   },
 
   getHogarConfig: async (): Promise<HogarConfig> => {

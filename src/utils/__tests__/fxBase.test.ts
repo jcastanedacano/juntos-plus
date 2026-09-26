@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   relativas, aPen, simboloDe, DEFAULT_FX_RATES,
-  convertirImporte, proyectarABase, proyectarMetaABase,
+  convertirImporte, proyectarABase, proyectarMetaABase, proyectarDeudaABase,
 } from '../fxTasas';
 
 /**
@@ -136,5 +136,23 @@ describe('proyectar metas a la base', () => {
   it('una meta sin moneda propia se queda igual', () => {
     const metas = [{ id: 'm2', targetAmount: 1000, currentAmount: 400 }];
     expect(proyectarMetaABase(metas, 'EUR', rel)).toEqual(metas);
+  });
+});
+
+describe('proyectar deudas a la base', () => {
+  const rel = relativas(PEN, 'EUR');
+
+  it('convierte saldo y cuota de una deuda en otra moneda', () => {
+    const deudas = [{ id: 'd1', balance: 1000, monthlyPayment: 100, currency: 'USD' }];
+    const salida = proyectarDeudaABase(deudas, 'EUR', rel);
+    expect(salida[0].balance).toBeCloseTo(875, 10);
+    expect(salida[0].monthlyPayment).toBeCloseTo(87.5, 10);
+    expect(salida[0].currency).toBe('EUR');
+  });
+
+  it('una deuda sin moneda propia se queda igual, y ni se copia', () => {
+    const deudas = [{ id: 'd2', balance: 1000, monthlyPayment: 100 }];
+    const salida = proyectarDeudaABase(deudas, 'EUR', rel);
+    expect(salida[0]).toBe(deudas[0]);
   });
 });

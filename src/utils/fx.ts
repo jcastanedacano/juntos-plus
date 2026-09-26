@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Transaction, RecurringTransaction, Budget, SavingsGoal, CurrencyType } from '../types';
+import { Transaction, RecurringTransaction, Budget, SavingsGoal, Debt, CurrencyType } from '../types';
 import { tokenOpcional } from '../auth/getToken';
 import { getAPIUrl } from './storageAPI';
 
@@ -10,7 +10,7 @@ export {
 } from './fxTasas';
 import {
   FxRates, DEFAULT_FX_RATES, relativas, aPen, getMonedaBase,
-  convertirImporte, proyectarABase, proyectarMetaABase,
+  convertirImporte, proyectarABase, proyectarMetaABase, proyectarDeudaABase,
   fijarMonedaBase as fijarMonedaBaseSinAvisar,
 } from './fxTasas';
 
@@ -177,6 +177,11 @@ export function projectBudgetsToBase(budgets: Budget[], rates?: FxRates): Budget
 /** Metas llevan dos importes propios --meta y ahorrado--, no uno. */
 export function projectGoalsToBase(goals: SavingsGoal[], rates?: FxRates): SavingsGoal[] {
   return proyectarMetaABase(goals, getMonedaBase(), rates || getFxRates());
+}
+
+/** Deudas: saldo y cuota llevan su propia moneda. */
+export function projectDebtsToBase(debts: Debt[], rates?: FxRates): Debt[] {
+  return proyectarDeudaABase(debts, getMonedaBase(), rates || getFxRates());
 }
 
 // ─── React hook so components react to FX rate edits ──────────────

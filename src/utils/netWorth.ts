@@ -1,4 +1,4 @@
-import { Account, Investment } from '../types';
+import { Account, Investment, Debt } from '../types';
 
 /**
  * Patrimonio neto = activos - pasivos.
@@ -10,7 +10,7 @@ import { Account, Investment } from '../types';
  * Si algun dia llevan moneda, la conversion entra aca y no en la vista.
  */
 
-export type NetWorthKind = 'cash' | 'investment' | 'credit';
+export type NetWorthKind = 'cash' | 'investment' | 'credit' | 'debt';
 
 export interface NetWorthItem {
   id: string;
@@ -27,6 +27,10 @@ export interface NetWorthBreakdown {
   liabilities: NetWorthItem[];
   totalAssets: number;
   totalLiabilities: number;
+  /** De totalLiabilities, lo que es tarjeta de credito. */
+  totalCardDebt: number;
+  /** De totalLiabilities, lo que son otras deudas (prestamos, vehiculo...). */
+  totalOtherDebt: number;
   netWorth: number;
   totalCash: number;
   totalInvested: number;
@@ -40,7 +44,8 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function calculateNetWorth(
   accounts: Account[],
-  investments: Investment[]
+  investments: Investment[],
+  debts: Debt[] = []
 ): NetWorthBreakdown {
   const assets: NetWorthItem[] = [];
   const liabilities: NetWorthItem[] = [];
@@ -78,6 +83,17 @@ export function calculateNetWorth(
     liabilities.push({ id: a.id, label: a.name, amount: used, kind: 'credit' });
   }
 
+  // Las cuotas de la propia tarjeta ya estan en lo usado de la tarjeta; aqui
+  // solo entran las deudas que se apuntaron aparte, para no contar dos veces.
+  const totalCardDebt = totalLiabilities;
+  let totalOtherDebt = 0;
+  for (const d of debts) {
+    if (d.isActive === false || !(d.balance > 0)) continue;
+    totalOtherDebt += d.balance;
+    liabilities.push({ id: d.id, label: d.name, amount: d.balance, kind: 'debt' });
+  }
+  totalLiabilities += totalOtherDebt;
+
   const totalAssets = totalCash + totalInvested;
   const investmentGain = totalInvested - investedCost;
 
@@ -86,6 +102,8 @@ export function calculateNetWorth(
     liabilities: liabilities.sort((x, y) => y.amount - x.amount),
     totalAssets: round2(totalAssets),
     totalLiabilities: round2(totalLiabilities),
+    totalCardDebt: round2(totalCardDebt),
+    totalOtherDebt: round2(totalOtherDebt),
     netWorth: round2(totalAssets - totalLiabilities),
     totalCash: round2(totalCash),
     totalInvested: round2(totalInvested),

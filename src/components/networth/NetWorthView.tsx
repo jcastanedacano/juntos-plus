@@ -1,12 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Wallet, LineChart, CreditCard } from 'lucide-react';
-import { Account, Investment, Transaction } from '../../types';
+import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Wallet, LineChart, CreditCard, Landmark } from 'lucide-react';
+import { Account, Investment, Transaction, Debt } from '../../types';
 import { formatCurrency } from '../../utils/calculations';
 import { calculateNetWorth, investmentsByType, INVESTMENT_TYPE_LABEL } from '../../utils/netWorth';
 import { calcularIndependencia } from '../../utils/independencia';
-import { useFxRates, projectToBase } from '../../utils/fx';
+import { useFxRates, projectToBase, projectDebtsToBase } from '../../utils/fx';
+import { normalizarEstrategia, normalizarExtra, Estrategia } from '../../utils/deudas';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { InvestmentModal } from './InvestmentModal';
 import { IndependenciaCard } from './IndependenciaCard';
+import { DeudasCard } from './DeudasCard';
+import { DebtModal } from './DebtModal';
 
 interface NetWorthViewProps {
   accounts: Account[];
@@ -17,6 +21,14 @@ interface NetWorthViewProps {
   /** Regla de retiro guardada en el hogar; ausente = la del 4%. */
   tasaRetiro?: number;
   onChangeTasaRetiro: (tasa: number) => void;
+  /** Deudas que no son la tarjeta. */
+  debts: Debt[];
+  estrategiaDeuda?: string;
+  extraDeuda?: number;
+  onChangeEstrategiaDeuda: (e: Estrategia) => void;
+  onChangeExtraDeuda: (n: number) => void;
+  onSaveDebt: (d: Debt) => void;
+  onDeleteDebt: (id: string) => void;
   onSaveInvestment: (inv: Investment) => void;
   onDeleteInvestment: (id: string) => void;
 }
@@ -35,18 +47,37 @@ export function NetWorthView({
   currency,
   tasaRetiro,
   onChangeTasaRetiro,
+  debts,
+  estrategiaDeuda,
+  extraDeuda,
+  onChangeEstrategiaDeuda,
+  onChangeExtraDeuda,
+  onSaveDebt,
+  onDeleteDebt,
   onSaveInvestment,
   onDeleteInvestment,
 }: NetWorthViewProps) {
   const [editing, setEditing] = useState<Investment | null>(null);
   const [showModal, setShowModal] = useState(false);
+  // En movil la pantalla no da margen a esta vista, y las tarjetas se pegaban
+  // a los bordes del telefono.
+  const isMobile = useIsMobile();
+  const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
+  const [showDebtModal, setShowDebtModal] = useState(false);
 
-  const nw = useMemo(() => calculateNetWorth(accounts, investments), [accounts, investments]);
+  // Cada deuda lleva su moneda: para sumarlas al patrimonio y simular su pago
+  // hace falta llevarlas a la del hogar, igual que los movimientos.
+  const fxRates = useFxRates();
+  const debtsBase = useMemo(() => projectDebtsToBase(debts, fxRates), [debts, fxRates]);
+
+  const nw = useMemo(
+    () => calculateNetWorth(accounts, investments, debtsBase),
+    [accounts, investments, debtsBase]
+  );
   const byType = useMemo(() => investmentsByType(investments), [investments]);
 
   // El promedio de gasto suma importes de meses distintos y de monedas
   // distintas: se proyecta a la moneda del hogar antes, como en el resto.
-  const fxRates = useFxRates();
   const txnsBase = useMemo(() => projectToBase(transactions, fxRates), [transactions, fxRates]);
   const independencia = useMemo(
     () => calcularIndependencia({ transacciones: txnsBase, neto: nw, inversiones: investments, tasa: tasaRetiro }),
@@ -59,7 +90,7 @@ export function NetWorthView({
   const gainPositive = nw.investmentGain >= 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', ...(isMobile ? { padding: '0 1rem' } : {}) }}>
       {/* Cifra principal */}
       <div style={{ ...card, padding: '1.5rem' }}>
         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
@@ -121,9 +152,20 @@ export function NetWorthView({
             <CreditCard size={14} /> Deuda de tarjetas
           </div>
           <div style={{ fontSize: '1.35rem', fontWeight: 600, marginTop: '0.3rem', fontVariantNumeric: 'tabular-nums' }}>
-            {formatCurrency(nw.totalLiabilities, currency)}
+            {formatCurrency(nw.totalCardDebt, currency)}
           </div>
         </div>
+
+        {nw.totalOtherDebt > 0 && (
+          <div style={card}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+              <Landmark size={14} /> Otras deudas
+            </div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 600, marginTop: '0.3rem', fontVariantNumeric: 'tabular-nums' }}>
+              {formatCurrency(nw.totalOtherDebt, currency)}
+            </div>
+          </div>
+        )}
       </div>
 
       <IndependenciaCard
@@ -227,6 +269,19 @@ export function NetWorthView({
         )}
       </div>
 
+      <DeudasCard
+        deudas={debts}
+        deudasBase={debtsBase}
+        currency={currency}
+        estrategia={normalizarEstrategia(estrategiaDeuda)}
+        extra={normalizarExtra(extraDeuda)}
+        onCambiarEstrategia={onChangeEstrategiaDeuda}
+        onCambiarExtra={onChangeExtraDeuda}
+        onAgregar={() => { setEditingDebt(null); setShowDebtModal(true); }}
+        onEditar={d => { setEditingDebt(d); setShowDebtModal(true); }}
+        onEliminar={onDeleteDebt}
+      />
+
       {/* Composicion */}
       <div style={card}>
         <h3 style={{ margin: '0 0 0.9rem', fontSize: '0.95rem', fontWeight: 600 }}>Composicion</h3>
@@ -249,6 +304,14 @@ export function NetWorthView({
           </div>
         </div>
       </div>
+
+      {showDebtModal && (
+        <DebtModal
+          editing={editingDebt}
+          onClose={() => { setShowDebtModal(false); setEditingDebt(null); }}
+          onSave={d => { onSaveDebt(d); setShowDebtModal(false); setEditingDebt(null); }}
+        />
+      )}
 
       {showModal && (
         <InvestmentModal

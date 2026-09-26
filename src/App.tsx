@@ -42,6 +42,7 @@ import { simboloDe, getMonedaBase } from './utils/fxTasas';
 // Lazy load view components
 const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
 const TransactionList = lazy(() => import('./components/TransactionList').then(m => ({ default: m.TransactionList })));
+const AlignmentView = lazy(() => import('./components/pareja/AlignmentView').then(m => ({ default: m.AlignmentView })));
 const SavingsGoals = lazy(() => import('./components/SavingsGoals').then(m => ({ default: m.SavingsGoals })));
 const Budgets = lazy(() => import('./components/Budgets').then(m => ({ default: m.Budgets })));
 const RecurringTransactions = lazy(() => import('./components/RecurringTransactions').then(m => ({ default: m.RecurringTransactions })));
@@ -86,6 +87,7 @@ const viewTitles: Record<ViewType, string> = {
   settings: 'Ajustes',
   recap: 'Recap anual',
   credit: 'Crédito',
+  alignment: 'Alineación',
 };
 
 function App() {
@@ -1506,6 +1508,8 @@ function App() {
           onDeleteInvestment={handleDeleteInvestment}
         />
       )}
+
+      {currentView === 'alignment' && <AlignmentView />}
 
       {currentView === 'settings' && (
         <MobileSettingsView

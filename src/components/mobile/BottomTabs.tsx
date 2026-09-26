@@ -36,7 +36,7 @@ const tabs: { id: ViewType; label: string; icon: typeof LayoutDashboard }[] = [
 /** Vistas que se alcanzan desde Ajustes: la pestana queda marcada en todas. */
 const SETTINGS_VIEWS: ViewType[] = [
   'settings', 'budgets', 'recurring', 'goals', 'credit',
-  'recap', 'networth', 'subscriptions', 'savings',
+  'recap', 'networth', 'subscriptions', 'savings', 'alignment',
 ];
 
 export function BottomTabs({ currentView, onViewChange, fab }: BottomTabsProps) {

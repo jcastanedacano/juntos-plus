@@ -49,6 +49,7 @@ no responde: **cuánto nos queda de verdad este mes** y **quién pagó qué**.
 | **Fondo de emergencia** | Una meta cuyo objetivo no se escribe a mano: son 3 o 6 meses de tus gastos recurrentes activos, y se ajusta solo si sube el alquiler o entra una suscripción. Muestra cuántos meses cubre lo ahorrado, no solo un porcentaje. Uno por hogar. |
 | **Mesada** | Un monto fijo al mes para cada persona, para gastar sin rendir cuentas. Descuenta solo lo que se apunta como propio (en el móvil, con el interruptor «Gasto personal»); lo compartido no resta. Avisa al 80% y cuando se pasa. |
 | **Deudas** | Préstamos, vehículo o un familiar, además de la tarjeta. Restan del patrimonio sin contar dos veces las cuotas de la tarjeta. Simula el pago mes a mes con bola de nieve (primero la que termina antes) o avalancha (primero la de mayor tasa), con un extra opcional, y compara cuánto interés paga cada una. |
+| **Alineación** | Un cuestionario anual para la pareja: cada uno reparte 100 puntos entre lo que le importa (ahorro, viajes, vivienda, familia...). Los resultados se ven juntos cuando los dos terminan, y no antes: lo que responde uno no sale del servidor hasta entonces. Muestra cuánto coinciden, dónde se separan más, y cómo cambió todo respecto al año anterior. |
 
 **Además:** presupuestos, metas de ahorro, patrimonio neto, recap anual,
 notificaciones push con un resumen diario y tipo de cambio en vivo.

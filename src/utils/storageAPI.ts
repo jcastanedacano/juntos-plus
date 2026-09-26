@@ -1,4 +1,4 @@
-import { Transaction, Account, Budget, User, SavingsGoal, Investment, RecurringTransaction, AutoSave } from '../types';
+import { Transaction, Account, Budget, User, SavingsGoal, Investment, RecurringTransaction, AutoSave, HogarConfig } from '../types';
 import { tokenOpcional } from '../auth/getToken';
 
 const API_URL = 'http://localhost:3007/api';
@@ -35,6 +35,8 @@ interface AppData {
   autosave: AutoSave[];
   /** Ids de suscripciones detectadas que el usuario descarto. */
   dismissedSubscriptions: string[];
+  /** Ajustes del hogar; ausente en hogares anteriores a este campo. */
+  hogarConfig?: HogarConfig;
 }
 
 let cachedData: AppData | null = null;
@@ -98,6 +100,7 @@ const fetchAllData = async (): Promise<AppData> => {
         recurring: [],
         autosave: [],
         dismissedSubscriptions: [],
+        hogarConfig: {},
       };
     } finally {
       pendingFetch = null;
@@ -230,6 +233,22 @@ export const storageAPI = {
 
   saveDismissedSubscriptions: async (ids: string[]): Promise<void> => {
     await saveToServer('dismissedSubscriptions', ids);
+  },
+
+  getHogarConfig: async (): Promise<HogarConfig> => {
+    const data = await fetchAllData();
+    return data.hogarConfig || {};
+  },
+
+  /**
+   * Guarda SOLO las claves que se pasan: el servidor las fusiona con las que
+   * ya hay, para que lo que guarda una persona no borre lo de la otra.
+   */
+  saveHogarConfig: async (parcial: HogarConfig): Promise<void> => {
+    const previo = cachedData?.hogarConfig || {};
+    await saveToServer('hogarConfig', parcial);
+    // saveToServer deja en cache lo enviado a secas; aqui se deja la union.
+    if (cachedData) cachedData.hogarConfig = { ...previo, ...parcial };
   },
 
   getUsers: async (): Promise<User[]> => {

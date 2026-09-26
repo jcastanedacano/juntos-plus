@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Owner } from '../types';
 import { getMsalInstance } from '../auth/getToken';
+import { getRolDelServidor, resolverRol, suscribirRol } from './rolPropio';
 
 /**
  * Maps email addresses → owner roles, so the app can tag activity to the
@@ -63,16 +64,14 @@ export function getCurrentUserEmail(): string | undefined {
 }
 
 /**
- * Returns the owner role for the currently signed-in user — 'partner' if
- * their email matches the configured partner address, 'me' otherwise.
- * Used to default new transactions / imports / adjustments to the right
- * person without needing the user to think about it.
+ * El rol de quien esta mirando --'me' o 'partner'-- para etiquetar por defecto
+ * lo que apunta, importa o ajusta sin que tenga que pensarlo.
+ *
+ * Lo decide el servidor por hogar (ver rolPropio.ts). El mapa de correos de
+ * localStorage queda solo como respaldo mientras el servidor no ha contestado.
  */
 export function getMyOwnerRole(): Owner {
-  const map = readFromStorage();
-  const email = getCurrentUserEmail();
-  if (email && map.partner && email === map.partner) return 'partner';
-  return 'me';
+  return resolverRol(getRolDelServidor(), getCurrentUserEmail(), readFromStorage().partner);
 }
 
 // ─── React hook so components re-render when the map changes ──────
@@ -91,7 +90,9 @@ export function useMyOwnerRole(): Owner {
   useEffect(() => {
     const update = () => setRole(getMyOwnerRole());
     update();
-    return subscribe(update);
+    const sinMapa = subscribe(update);
+    const sinRol = suscribirRol(update);
+    return () => { sinMapa(); sinRol(); };
   }, []);
   return role;
 }

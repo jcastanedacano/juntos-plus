@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react';
 import './App.css';
 import { useIsAuthenticated } from '@azure/msal-react';
-import { Transaction, SavingsGoal, Budget, RecurringTransaction, Account, DetectedSubscription, CreditStatementHistoryEntry, Investment } from './types';
+import { Transaction, SavingsGoal, Budget, RecurringTransaction, Account, DetectedSubscription, CreditStatementHistoryEntry, Investment, HogarConfig } from './types';
 import { getFxRates, refreshFxRates, fijarMonedaBase } from './utils/fx';
 import { getMyOwnerRole } from './utils/userIdentity';
 import { storageAPI as storage } from './utils/storage';
@@ -142,6 +142,7 @@ function App() {
   // servidor: la lista se rearma en cada visita, asi que sin esto el
   // descarte se perdia al salir de la vista.
   const [dismissedSubscriptions, setDismissedSubscriptions] = useState<string[]>([]);
+  const [hogarConfig, setHogarConfig] = useState<HogarConfig>({});
   // La seccion de Inicio sobrevive a ir a Movimientos y volver, por eso vive
   // aca y no dentro de la vista.
   const [homeSection, setHomeSection] = useState<HomeSection>('resumen');
@@ -220,7 +221,8 @@ function App() {
         loadedRecurring,
         loadedAccounts,
         loadedInvestments,
-        loadedDismissed
+        loadedDismissed,
+        loadedHogarConfig,
       ] = await Promise.all([
         storage.getTransactions(),
         storage.getCurrency(),
@@ -230,10 +232,12 @@ function App() {
         storage.getAccounts(),
         storage.getInvestments(),
         storage.getDismissedSubscriptions(),
+        storage.getHogarConfig(),
       ]);
 
       setInvestments(loadedInvestments || []);
       setDismissedSubscriptions(loadedDismissed || []);
+      setHogarConfig(loadedHogarConfig || {});
 
       const goalsWithDefaults = loadedGoals.map((goal: SavingsGoal) => ({
         ...goal,
@@ -1144,6 +1148,15 @@ function App() {
     });
   };
 
+  // Los ajustes se guardan por claves sueltas: el servidor las fusiona, asi
+  // que lo que cambia una persona no borra lo que puso la otra.
+  const handleSaveHogarConfig = (parcial: HogarConfig) => {
+    setHogarConfig(prev => ({ ...prev, ...parcial }));
+    storage.saveHogarConfig(parcial).catch(() => {
+      addToast({ type: 'error', message: 'No se pudo guardar el ajuste' });
+    });
+  };
+
   const handleDismissedSubscriptionsChange = (ids: string[]) => {
     setDismissedSubscriptions(ids);
     storage.saveDismissedSubscriptions(ids).catch(() => {
@@ -1424,7 +1437,10 @@ function App() {
         <NetWorthView
           accounts={accounts}
           investments={investments}
+          transactions={transactions}
           currency={currency}
+          tasaRetiro={hogarConfig.independencia?.tasa}
+          onChangeTasaRetiro={tasa => handleSaveHogarConfig({ independencia: { tasa } })}
           onSaveInvestment={handleSaveInvestment}
           onDeleteInvestment={handleDeleteInvestment}
         />

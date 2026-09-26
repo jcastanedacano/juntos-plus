@@ -1,14 +1,22 @@
 import { useMemo, useState } from 'react';
 import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Wallet, LineChart, CreditCard } from 'lucide-react';
-import { Account, Investment } from '../../types';
+import { Account, Investment, Transaction } from '../../types';
 import { formatCurrency } from '../../utils/calculations';
 import { calculateNetWorth, investmentsByType, INVESTMENT_TYPE_LABEL } from '../../utils/netWorth';
+import { calcularIndependencia } from '../../utils/independencia';
+import { useFxRates, projectToBase } from '../../utils/fx';
 import { InvestmentModal } from './InvestmentModal';
+import { IndependenciaCard } from './IndependenciaCard';
 
 interface NetWorthViewProps {
   accounts: Account[];
   investments: Investment[];
+  /** Los movimientos tal cual se guardaron: la vista los lleva a la moneda del hogar. */
+  transactions: Transaction[];
   currency: string;
+  /** Regla de retiro guardada en el hogar; ausente = la del 4%. */
+  tasaRetiro?: number;
+  onChangeTasaRetiro: (tasa: number) => void;
   onSaveInvestment: (inv: Investment) => void;
   onDeleteInvestment: (id: string) => void;
 }
@@ -23,7 +31,10 @@ const card: React.CSSProperties = {
 export function NetWorthView({
   accounts,
   investments,
+  transactions,
   currency,
+  tasaRetiro,
+  onChangeTasaRetiro,
   onSaveInvestment,
   onDeleteInvestment,
 }: NetWorthViewProps) {
@@ -32,6 +43,15 @@ export function NetWorthView({
 
   const nw = useMemo(() => calculateNetWorth(accounts, investments), [accounts, investments]);
   const byType = useMemo(() => investmentsByType(investments), [investments]);
+
+  // El promedio de gasto suma importes de meses distintos y de monedas
+  // distintas: se proyecta a la moneda del hogar antes, como en el resto.
+  const fxRates = useFxRates();
+  const txnsBase = useMemo(() => projectToBase(transactions, fxRates), [transactions, fxRates]);
+  const independencia = useMemo(
+    () => calcularIndependencia({ transacciones: txnsBase, neto: nw, inversiones: investments, tasa: tasaRetiro }),
+    [txnsBase, nw, investments, tasaRetiro]
+  );
 
   const openNew = () => { setEditing(null); setShowModal(true); };
   const openEdit = (inv: Investment) => { setEditing(inv); setShowModal(true); };
@@ -105,6 +125,12 @@ export function NetWorthView({
           </div>
         </div>
       </div>
+
+      <IndependenciaCard
+        resultado={independencia}
+        currency={currency}
+        onChangeTasa={onChangeTasaRetiro}
+      />
 
       {/* Inversiones */}
       <div style={card}>

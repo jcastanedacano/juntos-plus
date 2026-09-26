@@ -181,6 +181,9 @@ async function crearHogar(req, nombre, moneda) {
     nombre: (nombre || '').trim() || 'Mi hogar',
     creado: new Date().toISOString(),
     origen: 'alta',
+    // Quien lo estreno. De aqui sale quien es «yo» y quien es «pareja» en
+    // este hogar, igual para los dos dispositivos: ver rolDe().
+    creador: clave,
   };
   mapa.usuarios[clave] = id;
   anotarCorreo(mapa, clave, correoDelToken(req.user));
@@ -243,6 +246,44 @@ function nombradosDe(mapa, hogarId) {
 function correoDe(mapa, clave) {
   const correos = mapa.correos || {};
   return Object.keys(correos).find(c => correos[c] === clave) || null;
+}
+
+/**
+ * Quien es «yo» y quien es «pareja» DENTRO DEL HOGAR, igual en los dos
+ * dispositivos.
+ *
+ * Antes cada navegador lo decidia por su cuenta y lo guardaba en localStorage,
+ * asi que en el movil de la pareja «yo» seguia siendo el otro: lo que ella
+ * apuntaba a su nombre quedaba a nombre de quien creo el hogar. Ahora lo
+ * decide el servidor, una sola vez, y lo unico estable es esto:
+ *
+ *   - hogar migrado: el orden de MIEMBROS_PRINCIPAL. El primero es «yo».
+ *   - hogar de alta: quien lo creo es «yo»; el otro, «pareja».
+ *
+ * «me» y «partner» son roles del HOGAR, no de la persona: no cambian aunque
+ * cada uno se llame distinto en su pantalla (eso son las etiquetas).
+ */
+function rolDe(mapa, hogarId, usuario) {
+  const hogar = mapa.hogares[hogarId];
+  if (!hogar) return null;
+  const clave = claveDeUsuario(usuario);
+  if (!clave) return null;
+
+  if (hogar.origen === 'migracion') {
+    const correo = correoDelToken(usuario);
+    const posicion = MIEMBROS_PRINCIPAL.findIndex(
+      v => v === clave.toLowerCase() || (Boolean(correo) && v === correo)
+    );
+    // Fuera de la lista pero dentro del hogar: entro por invitacion, y por
+    // definicion no es el dueno original.
+    return posicion === 0 ? 'me' : 'partner';
+  }
+
+  const miembros = miembrosDe(mapa, hogarId);
+  // Sin creador anotado --hogares de antes de este campo-- gana quien llego
+  // primero al directorio, que es quien lo estreno.
+  const creador = hogar.creador || miembros[0];
+  return creador === clave ? 'me' : 'partner';
 }
 
 /** Guarda la llamada. Los errores son codigos: el cliente explica cada uno. */
@@ -394,7 +435,8 @@ async function aceptarInvitacion(req, destinoId) {
   const mapa = await leerHogares();
   const destino = mapa.hogares[destinoId];
   if (!destino) return { error: 'no_existe' };
-  if (!(destino.invitaciones || []).some(i => i.correo === correo)) return { error: 'no_invitado' };
+  const invitacion = (destino.invitaciones || []).find(i => i.correo === correo);
+  if (!invitacion) return { error: 'no_invitado' };
 
   const propioId = mapa.usuarios[clave];
   if (propioId === destinoId) return { error: 'ya_es_miembro' };
@@ -412,6 +454,9 @@ async function aceptarInvitacion(req, destinoId) {
   }
 
   mapa.usuarios[clave] = destinoId;
+  // Un hogar de antes de que se guardara el creador lo aprende aqui: quien
+  // invita es quien ya estaba, y por tanto quien lo estreno.
+  if (!destino.creador && destino.origen !== 'migracion') destino.creador = invitacion.invitadoPor;
   destino.invitaciones = (destino.invitaciones || []).filter(i => i.correo !== correo);
   await guardarHogares(mapa);
   console.log(`[hogares] ${correo} se muda a ${destinoId} (${fusionadas} transacciones)`);
@@ -780,7 +825,21 @@ const EMPTY_DATA = {
   autosave: [],
   // Ids de lo que el usuario marco como "no es suscripcion".
   dismissedSubscriptions: [],
+  // Ajustes del hogar que no son una lista: la tasa de retiro para la
+  // independencia financiera, la mesada de cada uno... Un solo objeto, para
+  // que un ajuste nuevo no obligue a tocar el servidor.
+  hogarConfig: {},
 };
+
+/**
+ * Une lo que llega con los ajustes que ya hay: las claves nuevas se suman y
+ * las repetidas las pisa lo que llega, pero lo que no se menciona se queda.
+ * Solo un objeto plano vale como ajuste; cualquier otra cosa no toca nada.
+ */
+function fusionarAjustes(actual, nuevo) {
+  const plano = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+  return { ...(plano(actual) ? actual : {}), ...(plano(nuevo) ? nuevo : {}) };
+}
 
 // Alta de hogar. Quien llega sin uno --siempre alguien del tenant externo--
 // estrena el suyo, vacio. Nunca se une a uno existente por su cuenta: eso
@@ -820,6 +879,9 @@ app.get('/api/hogar', async (req, res) => {
       hogarId: id,
       correo: correoDelToken(req.user) || null,
       nombre: hogar ? hogar.nombre : null,
+      // 'me' o 'partner' para quien pregunta, decidido aqui y no en cada
+      // navegador: ver rolDe().
+      rol: id ? rolDe(mapa, id, req.user) : null,
       // Los correos de quienes lo comparten, para que la pantalla de Pareja
       // diga quien esta dentro en vez de pedir que lo escriban a mano.
       miembros: id
@@ -1035,6 +1097,11 @@ app.post('/api/data/:collection', async (req, res) => {
 
     const data = await fs.readFile(req.archivo, 'utf8');
     const allData = JSON.parse(data);
+
+    // Los ajustes del hogar se FUSIONAN en vez de reemplazarse. Cada persona
+    // guarda el suyo desde su dispositivo --la tasa de retiro, su mesada--, y
+    // con «gana el ultimo» el guardado de una borraria el de la otra.
+    if (collection === 'hogarConfig') newData = fusionarAjustes(allData.hogarConfig, newData);
 
     allData[collection] = newData;
 
@@ -1522,7 +1589,7 @@ module.exports = {
   migrarAHogares, hogarDe, crearHogar,
   invitar, invitacionesPara, aceptarInvitacion, rechazarInvitacion, MONEDAS,
   fusionarDatos, consolidar, miembrosDe, nombradosDe,
-  cambiarMonedaHogar, COLECCIONES_CON_MONEDA,
+  cambiarMonedaHogar, COLECCIONES_CON_MONEDA, rolDe, fusionarAjustes,
 };
 
 // Start server

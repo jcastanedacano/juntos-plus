@@ -185,6 +185,15 @@ export interface Investment {
   notes?: string;
 }
 
+/**
+ * Ajustes del hogar que no son una lista. Un solo objeto en el archivo de
+ * datos, para que un ajuste nuevo no obligue a tocar el servidor.
+ */
+export interface HogarConfig {
+  /** Regla de retiro para el numero de independencia financiera (0.04 = 4%). */
+  independencia?: { tasa: number };
+}
+
 export interface RecurringPriceEntry {
   date: string;
   amount: number;

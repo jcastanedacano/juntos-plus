@@ -207,6 +207,31 @@ export interface HogarConfig {
    */
   mesadaMe?: number;
   mesadaPartner?: number;
+  /** Estrategia de pago de deudas elegida: 'avalancha' | 'bola_de_nieve'. */
+  deudaEstrategia?: string;
+  /** Lo que se paga de mas cada mes sobre las cuotas, en la moneda del hogar. */
+  deudaExtra?: number;
+}
+
+/**
+ * Una deuda que no es la tarjeta: prestamo, vehiculo, hipoteca, un familiar.
+ * Las cuotas de la propia tarjeta ya cuentan en la deuda de tarjetas y NO se
+ * repiten aqui.
+ */
+export interface Debt {
+  id: string;
+  name: string;
+  /** Capital que falta por pagar. */
+  balance: number;
+  /** TEA como fraccion, igual que en el resto de la app: 0.185 = 18,5 %. 0 = sin interes. */
+  tea: number;
+  monthlyPayment: number;
+  /** Opcional: si falta, se deduce del saldo, la tasa y la cuota. */
+  remainingInstallments?: number;
+  currency?: CurrencyType;
+  /** Ausente = activa. */
+  isActive?: boolean;
+  notes?: string;
 }
 
 export interface RecurringPriceEntry {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react';
 import './App.css';
 import { useIsAuthenticated } from '@azure/msal-react';
-import { Transaction, SavingsGoal, Budget, RecurringTransaction, Account, DetectedSubscription, CreditStatementHistoryEntry, Investment, HogarConfig } from './types';
+import { Transaction, SavingsGoal, Budget, RecurringTransaction, Account, DetectedSubscription, CreditStatementHistoryEntry, Investment, HogarConfig, Debt } from './types';
 import { getFxRates, refreshFxRates, fijarMonedaBase, useFxRates, projectRecurringToBase } from './utils/fx';
 import { gastoRecurrenteMensual, aplicarMetaEmergencia, nuevoFondoEmergencia, esFondoEmergencia } from './utils/fondoEmergencia';
 import { getMyOwnerRole } from './utils/userIdentity';
@@ -144,6 +144,7 @@ function App() {
   // descarte se perdia al salir de la vista.
   const [dismissedSubscriptions, setDismissedSubscriptions] = useState<string[]>([]);
   const [hogarConfig, setHogarConfig] = useState<HogarConfig>({});
+  const [debts, setDebts] = useState<Debt[]>([]);
   // La seccion de Inicio sobrevive a ir a Movimientos y volver, por eso vive
   // aca y no dentro de la vista.
   const [homeSection, setHomeSection] = useState<HomeSection>('resumen');
@@ -224,6 +225,7 @@ function App() {
         loadedInvestments,
         loadedDismissed,
         loadedHogarConfig,
+        loadedDebts,
       ] = await Promise.all([
         storage.getTransactions(),
         storage.getCurrency(),
@@ -234,11 +236,13 @@ function App() {
         storage.getInvestments(),
         storage.getDismissedSubscriptions(),
         storage.getHogarConfig(),
+        storage.getDebts(),
       ]);
 
       setInvestments(loadedInvestments || []);
       setDismissedSubscriptions(loadedDismissed || []);
       setHogarConfig(loadedHogarConfig || {});
+      setDebts(loadedDebts || []);
 
       const goalsWithDefaults = loadedGoals.map((goal: SavingsGoal) => ({
         ...goal,
@@ -1163,6 +1167,24 @@ function App() {
     });
   };
 
+  const handleSaveDebt = (d: Debt) => {
+    const updated = debts.some(x => x.id === d.id)
+      ? debts.map(x => (x.id === d.id ? d : x))
+      : [...debts, d];
+    setDebts(updated);
+    storage.saveDebts(updated).catch(() => {
+      addToast({ type: 'error', message: 'No se pudo guardar la deuda' });
+    });
+  };
+
+  const handleDeleteDebt = (id: string) => {
+    const updated = debts.filter(x => x.id !== id);
+    setDebts(updated);
+    storage.saveDebts(updated).catch(() => {
+      addToast({ type: 'error', message: 'No se pudo eliminar la deuda' });
+    });
+  };
+
   // Los ajustes se guardan por claves sueltas: el servidor las fusiona, asi
   // que lo que cambia una persona no borra lo que puso la otra.
   const handleSaveHogarConfig = (parcial: HogarConfig) => {
@@ -1473,6 +1495,13 @@ function App() {
           currency={currency}
           tasaRetiro={hogarConfig.independencia?.tasa}
           onChangeTasaRetiro={tasa => handleSaveHogarConfig({ independencia: { tasa } })}
+          debts={debts}
+          estrategiaDeuda={hogarConfig.deudaEstrategia}
+          extraDeuda={hogarConfig.deudaExtra}
+          onChangeEstrategiaDeuda={e => handleSaveHogarConfig({ deudaEstrategia: e })}
+          onChangeExtraDeuda={n => handleSaveHogarConfig({ deudaExtra: n })}
+          onSaveDebt={handleSaveDebt}
+          onDeleteDebt={handleDeleteDebt}
           onSaveInvestment={handleSaveInvestment}
           onDeleteInvestment={handleDeleteInvestment}
         />

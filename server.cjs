@@ -340,7 +340,7 @@ async function invitacionesPara(req, mapaDado) {
 // credenciales de dos personas que solo querian juntar sus gastos.
 const LISTAS_FUSIONABLES = [
   'transactions', 'accounts', 'budgets', 'goals',
-  'investments', 'recurring', 'autosave', 'dismissedSubscriptions',
+  'investments', 'recurring', 'autosave', 'dismissedSubscriptions', 'debts',
 ];
 
 /** El id de un elemento; dismissedSubscriptions son ids sueltos, no objetos. */
@@ -823,6 +823,8 @@ const EMPTY_DATA = {
   investments: [],
   recurring: [],
   autosave: [],
+  // Deudas que no son la tarjeta: prestamos, vehiculo, un familiar...
+  debts: [],
   // Ids de lo que el usuario marco como "no es suscripcion".
   dismissedSubscriptions: [],
   // Ajustes del hogar que no son una lista: la tasa de retiro para la
@@ -956,7 +958,7 @@ app.post('/api/hogar/invitacion/rechazar', async (req, res) => {
  * Es la unica limitacion real, y el cliente la explica antes de pedir
  * confirmacion.
  */
-const COLECCIONES_CON_MONEDA = ['transactions', 'budgets', 'goals', 'recurring'];
+const COLECCIONES_CON_MONEDA = ['transactions', 'budgets', 'goals', 'recurring', 'debts'];
 
 async function cambiarMonedaHogar(hogarId, monedaCruda) {
   const nueva = String(monedaCruda || '').trim().toUpperCase();

@@ -478,6 +478,55 @@ describe('cambiar la moneda del hogar', () => {
   });
 });
 
+describe('las deudas viajan con el hogar', () => {
+  it('un hogar nuevo nace con la lista de deudas vacia', async () => {
+    const s = cargarServidor(dir);
+    const casa = await s.crearHogar(ana, 'Casa de Ana');
+    const datos = JSON.parse(fs.readFileSync(s.archivoDeHogar(casa), 'utf8'));
+    expect(datos.debts).toEqual([]);
+  });
+
+  it('al aceptar una invitacion, las deudas de cada quien se unen', async () => {
+    const s = cargarServidor(dir);
+    const casa = await s.crearHogar(ana, 'Casa de Ana');
+    const suya = await s.crearHogar(beto, 'Casa de Beto');
+    fs.writeFileSync(s.archivoDeHogar(casa), JSON.stringify({
+      transactions: [], recurring: [], currency: 'PEN',
+      debts: [{ id: 'da', name: 'Auto', balance: 9000, tea: 0.12, monthlyPayment: 500 }],
+    }));
+    fs.writeFileSync(s.archivoDeHogar(suya), JSON.stringify({
+      transactions: [], recurring: [], currency: 'PEN',
+      debts: [{ id: 'db', name: 'Prestamo', balance: 3000, tea: 0.3, monthlyPayment: 250 }],
+    }));
+
+    await s.invitar(ana, 'beto@gmail.com');
+    const fin = await s.aceptarInvitacion(beto, casa);
+    expect(fin.error).toBeUndefined();
+
+    const juntos = JSON.parse(fs.readFileSync(s.archivoDeHogar(casa), 'utf8'));
+    expect(juntos.debts.map((d: { id: string }) => d.id)).toEqual(['da', 'db']);
+  });
+
+  it('al cambiar la moneda del hogar, las deudas sin moneda propia conservan la vieja', async () => {
+    const s = cargarServidor(dir);
+    const id = await s.crearHogar(ana, 'Casa de Ana', 'PEN');
+    fs.writeFileSync(s.archivoDeHogar(id), JSON.stringify({
+      currency: 'PEN', transactions: [], budgets: [], goals: [], recurring: [],
+      debts: [
+        { id: 'sin', name: 'Sin moneda', balance: 1000, tea: 0, monthlyPayment: 100 },
+        { id: 'con', name: 'En dolares', balance: 500, tea: 0, monthlyPayment: 50, currency: 'USD' },
+      ],
+    }));
+
+    const r = await s.cambiarMonedaHogar(id, 'EUR');
+    expect(r.error).toBeUndefined();
+    const datos = JSON.parse(fs.readFileSync(s.archivoDeHogar(id), 'utf8'));
+    // Sin esto, mil soles de deuda pasarian a leerse como mil euros.
+    expect(datos.debts.find((d: { id: string }) => d.id === 'sin').currency).toBe('PEN');
+    expect(datos.debts.find((d: { id: string }) => d.id === 'con').currency).toBe('USD');
+  });
+});
+
 // «Yo» y «pareja» son roles del HOGAR: los decide el servidor una vez y valen
 // igual en los dos dispositivos. Antes los decidia cada navegador con su
 // localStorage, y en el movil de la pareja «yo» seguia siendo el otro.

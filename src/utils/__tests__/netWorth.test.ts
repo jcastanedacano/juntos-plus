@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateNetWorth, investmentsByType } from '../netWorth';
-import { Account, Investment } from '../../types';
+import { Account, Investment, Debt } from '../../types';
 
 const cuenta = (id: string, name: string, balance: number, type: Account['type'] = 'debit'): Account =>
   ({ id, name, balance, color: '#000', icon: 'wallet', type });
@@ -67,5 +67,40 @@ describe('investmentsByType', () => {
       { type: 'crypto', label: 'Cripto', total: 1000 },
       { type: 'stocks', label: 'Acciones / ETFs', total: 800 },
     ]);
+  });
+});
+
+describe('deudas que no son la tarjeta', () => {
+  const prestamo = (over: Partial<Debt> = {}): Debt =>
+    ({ id: 'p', name: 'Prestamo', balance: 4000, tea: 0.2, monthlyPayment: 300, ...over });
+
+  it('restan del patrimonio, aparte de la tarjeta', () => {
+    const r = calculateNetWorth(
+      [cuenta('a', 'Ahorros', 10000), cuenta('t', 'Visa', 3500, 'credit')],
+      [],
+      [prestamo()]
+    );
+    expect(r.totalCardDebt).toBe(3500);
+    expect(r.totalOtherDebt).toBe(4000);
+    expect(r.totalLiabilities).toBe(7500);
+    expect(r.netWorth).toBe(2500);
+    expect(r.liabilities.find(l => l.id === 'p')?.kind).toBe('debt');
+  });
+
+  it('sin deudas apuntadas todo queda como antes', () => {
+    const r = calculateNetWorth([cuenta('a', 'Ahorros', 1000)], []);
+    expect(r.totalOtherDebt).toBe(0);
+    expect(r.totalCardDebt).toBe(0);
+  });
+
+  it('las pausadas y las de saldo cero no cuentan', () => {
+    const r = calculateNetWorth([], [], [prestamo({ isActive: false }), prestamo({ id: 'z', balance: 0 })]);
+    expect(r.totalOtherDebt).toBe(0);
+    expect(r.liabilities).toHaveLength(0);
+  });
+
+  it('todas las deudas de la lista suman', () => {
+    const r = calculateNetWorth([], [], [prestamo(), prestamo({ id: 'q', name: 'Auto', balance: 6000 })]);
+    expect(r.totalOtherDebt).toBe(10000);
   });
 });

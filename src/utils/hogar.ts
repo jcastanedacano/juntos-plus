@@ -44,7 +44,7 @@ const ANONIMO: EstadoHogar = {
   miembros: [], enviadas: [], invitaciones: [],
 };
 
-async function pedir(ruta: string, opciones: RequestInit = {}) {
+export async function pedir(ruta: string, opciones: RequestInit = {}) {
   // Sin cabecera cuando no hay cuenta de Microsoft: quien entro por Google se
   // identifica con la cookie, que el navegador adjunta sola.
   const token = await tokenOpcional();

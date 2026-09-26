@@ -8,6 +8,7 @@ const jwksClient = require('jwks-rsa');
 const webpush = require('web-push');
 require('dotenv').config();
 const { montarRutas: montarRutasGoogle, sesionDe, GOOGLE_ACTIVO } = require('./googleAuth.cjs');
+const { montarRutas: montarRutasCuestionario } = require('./cuestionario.cjs');
 
 const app = express();
 app.use(compression());
@@ -1027,6 +1028,10 @@ app.post('/api/hogar/moneda', async (req, res) => {
     res.status(500).json({ error: 'No se pudo cambiar la moneda' });
   }
 });
+
+// Cuestionario de alineacion: vive en su propio archivo por hogar, y lo de la
+// otra persona no sale de aqui hasta que las dos han respondido.
+montarRutasCuestionario(app, { conHogar, leerHogares, miembrosDe, claveDeUsuario, archivoDeHogar });
 
 app.get('/api/data', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');

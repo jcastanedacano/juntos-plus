@@ -168,6 +168,13 @@ export interface SavingsGoal {
   currency?: CurrencyType;
   contributions?: GoalContribution[];
   owner?: Owner;            // Couple-finance tag: shared (default) | me | partner
+  /**
+   * 'emergencia': el objetivo no se escribe a mano, se deriva de los gastos
+   * recurrentes por `mesesCobertura`. Ausente = meta normal.
+   */
+  tipo?: 'emergencia';
+  /** Solo para tipo 'emergencia': cuantos meses de gasto recurrente cubre. */
+  mesesCobertura?: number;
 }
 
 export type GoalStatusFilter = 'all' | 'active' | 'paused' | 'completed';

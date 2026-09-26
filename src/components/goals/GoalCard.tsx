@@ -6,6 +6,7 @@ import {
   getRequiredContribution, getGoalStatusLabel, isGoalCompleted, isGoalExpired,
 } from '../../utils/goalCalculations';
 import { Edit2, Trash2, MoreVertical, Pause, Play, Eye } from 'lucide-react';
+import { EmergenciaChip } from './EmergenciaChip';
 
 interface GoalCardProps {
   goal: SavingsGoal;
@@ -51,6 +52,7 @@ export const GoalCard = memo(({
         <div className="gl-card-title-area">
           <h3 className="gl-card-name">{goal.name}</h3>
           <span className="gl-card-status" style={{ color: status.color }}>{status.text}</span>
+          <EmergenciaChip goal={goal} />
         </div>
         <div className="gl-card-kebab" ref={menuRef}>
           <button

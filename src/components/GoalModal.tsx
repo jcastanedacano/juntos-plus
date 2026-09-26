@@ -3,6 +3,8 @@ import { SavingsGoal, CurrencyType, Owner } from '../types';
 import { OWNER_OPTIONS } from '../utils/ownership';
 import { useOwnerLabels } from '../utils/ownerLabels';
 import { getMonedaBase } from '../utils/fx';
+import { MESES_OFRECIDOS, esFondoEmergencia, normalizarMeses } from '../utils/fondoEmergencia';
+import { formatCurrency } from '../utils/calculations';
 
 interface GoalModalProps {
   onClose: () => void;
@@ -10,7 +12,7 @@ interface GoalModalProps {
   editingGoal?: SavingsGoal | null;
 }
 
-const goalIcons = ['🎯', '🏖️', '🏠', '🚗', '💍', '🎓', '🎮', '✈️', '💻', '📱', '⌚', '🎸'];
+const goalIcons = ['🎯', '🛟', '🏖️', '🏠', '🚗', '💍', '🎓', '🎮', '✈️', '💻', '📱', '⌚', '🎸'];
 const goalColors = [
   '#E8519E',
   '#02B08D',
@@ -38,7 +40,11 @@ export const GoalModal = ({ onClose, onSave, editingGoal }: GoalModalProps) => {
   const [color, setColor] = useState('#E8519E');
   const [currency, setCurrency] = useState<CurrencyType>('PEN');
   const [owner, setOwner] = useState<Owner>('shared');
+  const [meses, setMeses] = useState<number>(3);
   const ownerLabels = useOwnerLabels();
+  // Un fondo de emergencia no lleva objetivo a mano: se deriva de los gastos
+  // recurrentes por los meses que se elijan, y aqui solo se cambian los meses.
+  const esFondo = Boolean(editingGoal && esFondoEmergencia(editingGoal));
 
   useEffect(() => {
     if (editingGoal) {
@@ -53,6 +59,7 @@ export const GoalModal = ({ onClose, onSave, editingGoal }: GoalModalProps) => {
       setColor(editingGoal.color);
       setCurrency(editingGoal.currency || getMonedaBase());
       setOwner(editingGoal.owner || 'shared');
+      setMeses(normalizarMeses(editingGoal.mesesCobertura));
     } else {
       // Para nueva meta, establecer fecha de inicio como hoy
       setStartDate(new Date().toISOString().split('T')[0]);
@@ -74,6 +81,9 @@ export const GoalModal = ({ onClose, onSave, editingGoal }: GoalModalProps) => {
       description: description.trim() || undefined,
       currency,
       owner,
+      // Sin esto, editar un fondo de emergencia lo convertiria en una meta
+      // normal y su objetivo dejaria de seguir a los gastos.
+      ...(esFondo ? { tipo: 'emergencia' as const, mesesCobertura: meses } : {}),
     };
 
     onSave(goal);
@@ -120,6 +130,34 @@ export const GoalModal = ({ onClose, onSave, editingGoal }: GoalModalProps) => {
           </div>
 
           <div className="form-row">
+            {esFondo ? (
+              <div className="form-group">
+                <label className="form-label">Meses de cobertura</label>
+                <div role="group" aria-label="Meses de cobertura" style={{ display: 'flex', gap: '0.4rem' }}>
+                  {MESES_OFRECIDOS.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      aria-pressed={meses === m}
+                      onClick={() => setMeses(m)}
+                      style={{
+                        minHeight: 34, padding: '0 0.85rem', borderRadius: 999, cursor: 'pointer',
+                        fontSize: '0.8rem', fontWeight: 600,
+                        border: '1px solid var(--border-color)',
+                        background: meses === m ? 'var(--accent-green)' : 'transparent',
+                        color: meses === m ? '#0b1a14' : 'var(--text-muted)',
+                      }}
+                    >
+                      {m} meses
+                    </button>
+                  ))}
+                </div>
+                <div style={{ marginTop: '0.35rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  Objetivo automático: {formatCurrency(editingGoal!.targetAmount, currency)} hoy,
+                  según tus gastos recurrentes.
+                </div>
+              </div>
+            ) : (
             <div className="form-group">
               <label className="form-label">Monto objetivo</label>
               <input
@@ -133,6 +171,7 @@ export const GoalModal = ({ onClose, onSave, editingGoal }: GoalModalProps) => {
                 required
               />
             </div>
+            )}
 
             <div className="form-group">
               <label className="form-label">Monto actual</label>

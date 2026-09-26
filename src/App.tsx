@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react
 import './App.css';
 import { useIsAuthenticated } from '@azure/msal-react';
 import { Transaction, SavingsGoal, Budget, RecurringTransaction, Account, DetectedSubscription, CreditStatementHistoryEntry, Investment, HogarConfig } from './types';
-import { getFxRates, refreshFxRates, fijarMonedaBase } from './utils/fx';
+import { getFxRates, refreshFxRates, fijarMonedaBase, useFxRates, projectRecurringToBase } from './utils/fx';
+import { gastoRecurrenteMensual, aplicarMetaEmergencia, nuevoFondoEmergencia, esFondoEmergencia } from './utils/fondoEmergencia';
 import { getMyOwnerRole } from './utils/userIdentity';
 import { storageAPI as storage } from './utils/storage';
 import { getLastLoadError } from './utils/storageAPI';
@@ -887,8 +888,11 @@ function App() {
   // Goals handlers
   const handleAddGoal = (newGoal: Omit<SavingsGoal, 'id'>) => {
     if (editingGoal) {
+      // Se parte de la meta existente: el formulario no trae los aportes, y
+      // sin esto editar cualquier meta --tambien el fondo de emergencia--
+      // borraba su historial.
       const updatedGoals = goals.map((g) =>
-        g.id === editingGoal.id ? { ...newGoal, id: editingGoal.id } : g
+        g.id === editingGoal.id ? { ...g, ...newGoal, id: editingGoal.id } : g
       );
       setGoals(updatedGoals);
       storage.saveGoals(updatedGoals);
@@ -937,6 +941,17 @@ function App() {
     });
     setGoals(updatedGoals);
     storage.saveGoals(updatedGoals);
+  };
+
+  const handleCrearFondoEmergencia = (meses: number) => {
+    // Uno por hogar.
+    if (goals.some(esFondoEmergencia)) return;
+    const fondo: SavingsGoal = { ...nuevoFondoEmergencia(gastoRecurrente, meses), id: Date.now().toString() };
+    const updatedGoals = [...goals, fondo];
+    setGoals(updatedGoals);
+    storage.saveGoals(updatedGoals).catch(() => {
+      addToast({ type: 'error', message: 'No se pudo crear el fondo de emergencia' });
+    });
   };
 
   const handleToggleGoalActive = (id: string) => {
@@ -1210,9 +1225,20 @@ function App() {
     () => calculatePreviousMonthStats(transactions, selectedMonth),
     [transactions, selectedMonth]
   );
+  // El objetivo del fondo de emergencia sale de los gastos recurrentes, y se
+  // calcula aqui, una vez, para que todo lo que lee las metas vea la misma cifra.
+  const fxRates = useFxRates();
+  const gastoRecurrente = useMemo(
+    () => gastoRecurrenteMensual(projectRecurringToBase(recurring, fxRates)),
+    [recurring, fxRates]
+  );
+  const goalsView = useMemo(
+    () => aplicarMetaEmergencia(goals, gastoRecurrente, getMonedaBase(), fxRates),
+    [goals, gastoRecurrente, fxRates]
+  );
   const monthlyPlan = useMemo(
-    () => calculateMonthlyPlan(recurring, budgets, goals, transactions, selectedMonth),
-    [recurring, budgets, goals, transactions, selectedMonth]
+    () => calculateMonthlyPlan(recurring, budgets, goalsView, transactions, selectedMonth),
+    [recurring, budgets, goalsView, transactions, selectedMonth]
   );
 
   // Handle export
@@ -1247,7 +1273,7 @@ function App() {
           stats={stats}
           previousStats={previousStats}
           transactions={transactions}
-          goals={goals}
+          goals={goalsView}
           accounts={accounts}
           currency={currency}
           monthlyPlan={monthlyPlan}
@@ -1365,7 +1391,9 @@ function App() {
 
       {currentView === 'goals' && (
         <SavingsGoals
-          goals={goals}
+          goals={goalsView}
+          gastoRecurrente={gastoRecurrente}
+          onCrearFondoEmergencia={handleCrearFondoEmergencia}
           onAddGoal={() => {
             setEditingGoal(null);
             setShowGoalModal(true);
@@ -1460,7 +1488,7 @@ function App() {
       {currentView === 'recap' && (
         <YearRecap
           transactions={transactions}
-          goals={goals}
+          goals={goalsView}
           currency={currency}
         />
       )}

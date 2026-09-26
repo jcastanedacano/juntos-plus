@@ -11,6 +11,8 @@ import { GoalDrawer } from './goals/GoalDrawer';
 import { GoalContributeModal } from './goals/GoalContributeModal';
 import { GoalEmptyState } from './goals/GoalEmptyState';
 import { GoalSkeleton } from './goals/GoalSkeleton';
+import { FondoEmergenciaBanner } from './goals/FondoEmergenciaBanner';
+import { esFondoEmergencia } from '../utils/fondoEmergencia';
 import { useToast } from './ui/Toast';
 import { Plus, Target, TrendingUp, PiggyBank, CalendarClock } from 'lucide-react';
 
@@ -22,6 +24,9 @@ interface SavingsGoalsProps {
   onContribute: (goalId: string, amount: number, note?: string) => void;
   onToggleGoalActive?: (id: string) => void;
   currency: string;
+  /** Gasto recurrente mensual del hogar; con esto se propone el fondo de emergencia. */
+  gastoRecurrente?: number;
+  onCrearFondoEmergencia?: (meses: number) => void;
 }
 
 export const SavingsGoals = ({
@@ -32,6 +37,8 @@ export const SavingsGoals = ({
   onContribute,
   onToggleGoalActive,
   currency,
+  gastoRecurrente = 0,
+  onCrearFondoEmergencia,
 }: SavingsGoalsProps) => {
   const {
     statusFilter, setStatusFilter,
@@ -97,10 +104,20 @@ export const SavingsGoals = ({
     drawerOpen: drawerId !== null,
   });
 
+  // Uno por hogar: la propuesta desaparece en cuanto existe.
+  const propuesta = onCrearFondoEmergencia && !goals.some(esFondoEmergencia) ? (
+    <FondoEmergenciaBanner
+      gastoMensual={gastoRecurrente}
+      currency={currency}
+      onCrear={onCrearFondoEmergencia}
+    />
+  ) : null;
+
   // Empty state
   if (goals.length === 0) {
     return (
       <div className="gl-container">
+        {propuesta}
         <GoalEmptyState variant="no-data" onAddGoal={onAddGoal} />
       </div>
     );
@@ -115,6 +132,8 @@ export const SavingsGoals = ({
           <Plus size={16} /> Nueva Meta
         </button>
       </div>
+
+      {propuesta}
 
       {/* Summary KPIs */}
       <div className="gl-summary">

@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { X, Edit2, Trash2, Pause, Play, TrendingUp, Calendar, Target } from 'lucide-react';
 import { parseDateOnly } from '../../utils/stableDate';
+import { EmergenciaChip } from './EmergenciaChip';
 
 interface GoalDrawerProps {
   goal: SavingsGoal | null;
@@ -60,6 +61,7 @@ export const GoalDrawer = ({
             <div>
               <h3 className="gl-drawer-title">{goal.name}</h3>
               <span className="gl-drawer-status" style={{ color: status.color }}>{status.text}</span>
+              <div><EmergenciaChip goal={goal} /></div>
             </div>
           </div>
         </div>

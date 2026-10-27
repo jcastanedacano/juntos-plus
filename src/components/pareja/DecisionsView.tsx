@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Scale, Plus, X } from 'lucide-react';
-import { useOwnerLabels } from '../../utils/ownerLabels';
+import { useOwnerLabels, DEFAULT_OWNER_LABELS } from '../../utils/ownerLabels';
 import { useMyOwnerRole } from '../../utils/userIdentity';
 import { getMonedaBase } from '../../utils/fxTasas';
 import { formatCurrency } from '../../utils/calculations';
@@ -40,7 +40,10 @@ export function DecisionsView() {
 
   const etiquetas = useOwnerLabels();
   const miRol = useMyOwnerRole();
-  const nombrePareja = etiquetas[miRol === 'me' ? 'partner' : 'me'];
+  // Sin nombre puesto, la etiqueta de la otra persona puede ser «Yo»: leido por
+  // quien vota, «Yo ya votó» confunde, asi que se dice «Tu pareja».
+  const etiqueta = etiquetas[miRol === 'me' ? 'partner' : 'me'];
+  const nombrePareja = etiqueta === DEFAULT_OWNER_LABELS.me ? 'Tu pareja' : etiqueta;
 
   const cargar = useCallback(async () => {
     setEstado({ tipo: 'cargando' });
@@ -260,6 +263,8 @@ function Tarjeta({
 
   const fmtMonto = d.monto !== null ? formatCurrency(d.monto, getMonedaBase()) : null;
   const miVoto = d.yo ? d.yo.opcion : null;
+  // A mitad de frase «Tu pareja» va en minuscula.
+  const enFrase = nombrePareja === 'Tu pareja' ? 'tu pareja' : nombrePareja;
   const votando = d.estado === 'votando';
 
   return (
@@ -273,7 +278,7 @@ function Tarjeta({
         <>
           <div style={{ marginTop: '0.25rem', fontSize: '0.78rem', ...muted }}>
             {d.yo
-              ? `Ya votaste. Cuando ${nombrePareja} vote, verán el resultado juntos.`
+              ? `Ya votaste. Cuando ${enFrase} vote, verán el resultado juntos.`
               : (d.pareja.voto ? `${nombrePareja} ya votó. Vota tú para ver el resultado.` : 'Vota en privado: el otro no ve tu voto.')}
           </div>
           <div role="radiogroup" aria-label={d.pregunta} style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
@@ -305,7 +310,7 @@ function Tarjeta({
             </button>
             {d.yo && (
               <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', ...muted }}>
-                Puedes cambiarlo hasta que {nombrePareja} vote.
+                Puedes cambiarlo hasta que {enFrase} vote.
               </div>
             )}
           </div>

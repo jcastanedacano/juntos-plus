@@ -48,6 +48,7 @@ const viewTitles: Record<ViewType, string> = {
   recap: 'Recap',
   credit: 'Crédito',
   alignment: 'Alineación',
+  decisions: 'Decidir',
 };
 
 export function AppShellMobile({

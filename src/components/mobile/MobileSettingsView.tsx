@@ -37,6 +37,7 @@ const INDICE: { label: string; donde: string; view: ViewType }[] = [
   { label: 'Centro de ahorro', donde: 'Fijos', view: 'savings' },
   { label: 'Patrimonio', donde: 'Nosotros', view: 'networth' },
   { label: 'Alineación', donde: 'Nosotros', view: 'alignment' },
+  { label: 'Decidir juntos', donde: 'Nosotros', view: 'decisions' },
 ];
 
 export function MobileSettingsView({

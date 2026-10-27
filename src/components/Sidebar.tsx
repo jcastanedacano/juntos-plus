@@ -14,13 +14,14 @@ import {
   PiggyBank,
   Users,
   HeartHandshake,
+  Scale,
   ChevronLeft,
   ChevronRight,
   Menu,
   X
 } from 'lucide-react';
 
-export type ViewType = 'dashboard' | 'transactions' | 'goals' | 'budgets' | 'recurring' | 'subscriptions' | 'savings' | 'networth' | 'recap' | 'credit' | 'alignment' | 'settings';
+export type ViewType = 'dashboard' | 'transactions' | 'goals' | 'budgets' | 'recurring' | 'subscriptions' | 'savings' | 'networth' | 'recap' | 'credit' | 'alignment' | 'decisions' | 'settings';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -47,6 +48,7 @@ const navItems: { id: ViewType; label: string; icon: typeof LayoutDashboard }[] 
   { id: 'goals', label: 'Metas', icon: Target },
   { id: 'networth', label: 'Patrimonio', icon: Landmark },
   { id: 'alignment', label: 'Alineación', icon: HeartHandshake },
+  { id: 'decisions', label: 'Decidir juntos', icon: Scale },
   { id: 'recap', label: 'Recap anual', icon: Sparkles },
 ];
 

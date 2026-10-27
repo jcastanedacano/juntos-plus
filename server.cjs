@@ -9,6 +9,7 @@ const webpush = require('web-push');
 require('dotenv').config();
 const { montarRutas: montarRutasGoogle, sesionDe, GOOGLE_ACTIVO } = require('./googleAuth.cjs');
 const { montarRutas: montarRutasCuestionario } = require('./cuestionario.cjs');
+const { montarRutas: montarRutasDecisiones } = require('./decisiones.cjs');
 
 const app = express();
 app.use(compression());
@@ -1032,6 +1033,9 @@ app.post('/api/hogar/moneda', async (req, res) => {
 // Cuestionario de alineacion: vive en su propio archivo por hogar, y lo de la
 // otra persona no sale de aqui hasta que las dos han respondido.
 montarRutasCuestionario(app, { conHogar, leerHogares, miembrosDe, claveDeUsuario, archivoDeHogar });
+
+// Decidir juntos: votos ciegos, mismo patron y mismo motivo que el cuestionario.
+montarRutasDecisiones(app, { conHogar, leerHogares, miembrosDe, claveDeUsuario, archivoDeHogar });
 
 app.get('/api/data', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');

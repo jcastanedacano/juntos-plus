@@ -331,6 +331,10 @@ export const Budgets = ({
                     </div>
                   </div>
 
+                  {budget.notes && (
+                    <p className="bdg-item-notes">{budget.notes}</p>
+                  )}
+
                   {/* Progress bar */}
                   <div className="bdg-bar">
                     <div className="bdg-bar-fill" style={{ width: `${Math.min(pct, 100)}%`, background: barColor }} />

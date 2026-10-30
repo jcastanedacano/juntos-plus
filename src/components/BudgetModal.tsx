@@ -2,6 +2,7 @@ import { useState, FormEvent, useEffect } from 'react';
 import { Budget, CurrencyType } from '../types';
 import { getCategoriesByType } from '../utils/categoryHelpers';
 import { getMonedaBase } from '../utils/fx';
+import { limpiarNota, LIMITE_NOTA } from '../utils/budgetNotes';
 
 interface BudgetModalProps {
   onClose: () => void;
@@ -15,6 +16,7 @@ export const BudgetModal = ({ onClose, onSave, editingBudget, existingBudgets }:
   const [amount, setAmount] = useState('');
   const [period, setPeriod] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
   const [currency, setCurrency] = useState<CurrencyType>('PEN');
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     if (editingBudget) {
@@ -22,6 +24,7 @@ export const BudgetModal = ({ onClose, onSave, editingBudget, existingBudgets }:
       setAmount(editingBudget.amount.toString());
       setPeriod(editingBudget.period);
       setCurrency(editingBudget.currency || getMonedaBase());
+      setNotes(editingBudget.notes || '');
     }
   }, [editingBudget]);
 
@@ -41,11 +44,15 @@ export const BudgetModal = ({ onClose, onSave, editingBudget, existingBudgets }:
       return;
     }
 
+    // Una nota vacia no se guarda: editar un presupuesto y borrar su nota
+    // tiene que dejarlo sin ella, no con un texto en blanco.
+    const nota = limpiarNota(notes);
     const budget: Omit<Budget, 'id' | 'spent'> = {
       categoryId,
       amount: parseFloat(amount),
       period,
       currency,
+      ...(nota ? { notes: nota } : {}),
     };
 
     onSave(budget);
@@ -123,6 +130,23 @@ export const BudgetModal = ({ onClose, onSave, editingBudget, existingBudgets }:
               <option value="monthly">Mensual</option>
               <option value="yearly">Anual</option>
             </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="budget-notes">Notas (opcional)</label>
+            <textarea
+              id="budget-notes"
+              className="form-input"
+              placeholder="Ej: terapias, compra de medicamentos"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value.slice(0, LIMITE_NOTA))}
+              maxLength={LIMITE_NOTA}
+              rows={3}
+              style={{ resize: 'vertical' }}
+            />
+            <div style={{ marginTop: '0.25rem', fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'right' }}>
+              {notes.length}/{LIMITE_NOTA}
+            </div>
           </div>
 
           <div className="budget-info">

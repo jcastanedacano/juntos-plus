@@ -123,6 +123,11 @@ export interface Budget {
   spent: number;
   period: 'monthly' | 'weekly' | 'yearly';
   currency?: CurrencyType;
+  /**
+   * Texto libre para recordar que entra en este presupuesto: «Salud» no dice
+   * si son terapias o medicinas. Se escribe a mano; ausente = sin nota.
+   */
+  notes?: string;
 }
 
 export interface Statistics {

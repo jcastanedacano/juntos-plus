@@ -26,6 +26,7 @@ import type { ViewType } from './components/Sidebar';
 import { Header, PeriodFilter } from './components/Header';
 import { LoginPage } from './components/LoginPage';
 import { AltaHogar } from './components/AltaHogar';
+import { BotonSalir } from './components/BotonSalir';
 import { consultarHogar, EstadoHogar } from './utils/hogar';
 import { useToast } from './components/ui/Toast';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -1617,6 +1618,7 @@ function App() {
             <button className="login-btn" onClick={() => window.location.reload()}>
               <span>Reintentar</span>
             </button>
+            <BotonSalir />
           </div>
         </div>
       </div>

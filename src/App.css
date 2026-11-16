@@ -5369,15 +5369,18 @@ body {
 /* Con `.login-page` delante a proposito: la regla del boton principal ya lleva
    dos clases, y sin igualar esa especificidad el degradado azul se comia el
    fondo de estos y los tres botones salian identicos. */
+/* Con las variables PROPIAS de la pantalla (--lp-*), no con los tokens globales:
+   en movil la capa Classical redefine --text-primary a casi negro, y el boton
+   quedaba negro sobre fondo oscuro. */
 .login-page .login-btn-alt {
   background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
+  border: 1px solid var(--lp-borde);
+  color: var(--lp-texto);
   box-shadow: none;
 }
 
 .login-page .login-btn-alt:hover {
-  border-color: var(--accent-blue);
+  border-color: var(--lp-acento);
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -5396,6 +5399,11 @@ body {
 }
 
 .login-page .login-btn-google + .login-btn-alt {
+  margin-top: 0.6rem;
+}
+
+/* Salir desde una pantalla de bloqueo: va debajo del boton principal, con aire. */
+.login-page .login-salir {
   margin-top: 0.6rem;
 }
 

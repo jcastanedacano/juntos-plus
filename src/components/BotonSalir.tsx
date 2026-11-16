@@ -13,27 +13,46 @@ import { cerrarSesion } from '../auth/salir';
  *
  * Usa el mismo cerrarSesion que el resto: borra la cookie de Google y cierra
  * la cuenta de Microsoft, porque cerrar solo una deja dentro a quien cree que
- * salio. Sin red tambien funciona: sigue y recarga, que es justo cuando hace
- * falta.
+ * salio. Sin red, o con un servidor que no contesta, tambien funciona: espera
+ * un rato, sigue y recarga, que es justo cuando hace falta.
  */
 export function BotonSalir() {
   const { instance } = useMsal();
   const [saliendo, setSaliendo] = useState(false);
+  const [fallo, setFallo] = useState(false);
+
+  const salir = async () => {
+    // Una sola vez: el redirect de Microsoft tarda y un segundo clic
+    // lanzaria otro cierre encima.
+    setSaliendo(true);
+    setFallo(false);
+    try {
+      await cerrarSesion(instance);
+    } catch {
+      // Si el cierre de Microsoft se rechaza no hay navegacion, y dejar el
+      // boton deshabilitado seria quitar la unica salida que hay. Se vuelve a
+      // ofrecer y se dice por que, en vez de quedarse mudo.
+      setSaliendo(false);
+      setFallo(true);
+    }
+  };
 
   return (
-    <button
-      type="button"
-      className="login-btn login-btn-alt login-salir"
-      disabled={saliendo}
-      onClick={() => {
-        // Una sola vez: el redirect de Microsoft tarda y un segundo clic
-        // lanzaria otro cierre encima.
-        setSaliendo(true);
-        void cerrarSesion(instance);
-      }}
-    >
-      <LogOut size={18} />
-      <span>{saliendo ? 'Saliendo…' : 'Cerrar sesión'}</span>
-    </button>
+    <>
+      <button
+        type="button"
+        className="login-btn login-btn-alt login-salir"
+        disabled={saliendo}
+        onClick={() => { void salir(); }}
+      >
+        <LogOut size={18} />
+        <span>{saliendo ? 'Saliendo…' : 'Cerrar sesión'}</span>
+      </button>
+      {fallo && (
+        <p className="alta-error" role="alert">
+          No se pudo cerrar la sesión. Inténtalo de nuevo.
+        </p>
+      )}
+    </>
   );
 }

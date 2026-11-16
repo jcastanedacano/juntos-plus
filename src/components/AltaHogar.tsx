@@ -3,6 +3,7 @@ import { Home, Users, Check, X } from 'lucide-react';
 import {
   EstadoHogar, crearHogar, aceptarInvitacion, rechazarInvitacion, explicar, MONEDAS,
 } from '../utils/hogar';
+import { BotonSalir } from './BotonSalir';
 
 interface Props {
   estado: EstadoHogar;
@@ -134,6 +135,10 @@ export function AltaHogar({ estado, onListo }: Props) {
           </button>
 
           {error && <p className="alta-error" role="alert">{error}</p>}
+
+          {/* Siempre, no solo ante un error: crear un hogar no es obligatorio
+              si la cuenta con la que se entro no es la que se queria. */}
+          <BotonSalir />
 
           <p className="login-secured">
             Empiezas con todo vacío. Nadie más ve tus números.
